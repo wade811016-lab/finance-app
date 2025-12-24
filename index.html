@@ -36,16 +36,21 @@
     </script>
 
     <style>
-        /* 核心修復：強制瀏覽器與 OS 使用暗色模式渲染表單控件 */
+        /* [Mobile Viewport Fix] 使用 dynamic viewport height 解決手機網址列遮擋問題 */
         :root { color-scheme: dark; }
         
         body { 
             background-color: theme('colors.sys.bg'); 
             color: theme('colors.sys.text'); 
             font-family: 'Rajdhani', sans-serif; 
-            overflow-x: hidden; 
+            overflow-x: hidden;
+            /* 關鍵：確保 body 佔滿動態高度 */
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
         }
         
+        /* 自定義捲軸 */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: theme('colors.sys.bg'); }
         ::-webkit-scrollbar-thumb { background: theme('colors.sys.blue'); }
@@ -62,10 +67,7 @@
             background: linear-gradient(90deg, transparent, theme('colors.sys.blue'), transparent);
         }
 
-        /* Form Fixes - 終極防白屏 V5 */
-        /* 1. 移除所有 transition，防止顏色切換延遲 */
-        /* 2. 使用 !important 強制背景色 */
-        /* 3. 針對 Webkit (iOS/Chrome) 強制外觀重置 */
+        /* [Anti-White Flash V7] 強制深色表單與移除動畫 */
         input, select, textarea {
             background-color: #1a1a2e !important;
             border: 1px solid theme('colors.sys.blue') !important;
@@ -75,44 +77,41 @@
             transition: none !important; 
             -webkit-appearance: none;
             appearance: none;
-            color-scheme: dark; /* 再次強制 */
+            color-scheme: dark; 
         }
         
-        /* 聚焦時確保背景不變白 */
         input:focus, select:focus, textarea:focus {
             outline: none !important;
             box-shadow: theme('boxShadow.neon-blue') !important;
-            background-color: #1a1a2e !important;
+            background-color: #232342 !important;
         }
 
-        /* 針對 Option 的樣式 (部分瀏覽器支援) */
         select option { 
             background-color: #0a0a12 !important; 
             color: #e0e0ff !important; 
             padding: 10px; 
         }
         
-        /* 自定義下拉箭頭 */
         select {
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2300e1ff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
             background-position: right 0.5rem center; 
             background-repeat: no-repeat; 
             background-size: 1.5em 1.5em;
-            padding-right: 2.5rem !important; /* 確保文字不被箭頭擋住 */
+            padding-right: 2.5rem !important; 
         }
 
-        /* 儀表板專用下拉選單修正 */
-        /* 修正文字被切斷問題：使用 flex 排版並增加最小寬度 */
+        /* 儀表板下拉選單樣式修正 */
         .dashboard-select { 
             padding-top: 0 !important; 
             padding-bottom: 0 !important; 
             padding-left: 0.75rem !important;
             height: 2.5rem; 
             line-height: 2.5rem;
-            min-width: 5rem; /* 增加基礎寬度 */
-            width: auto;     /* 允許根據內容延伸 */
+            min-width: 5rem; 
+            width: auto;
         }
 
+        /* 按鈕樣式 */
         .sys-btn {
             border: 1px solid theme('colors.sys.blue'); color: theme('colors.sys.blue');
             text-transform: uppercase; letter-spacing: 1px; font-weight: bold;
@@ -129,11 +128,16 @@
         
         @keyframes slideInRight { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
         .system-toast { animation: slideInRight 0.4s ease-out forwards; border-left: 4px solid theme('colors.sys.blue'); }
+        
+        /* [Mobile Layout Fix] 確保底部導航不遮擋內容 */
+        #main-content {
+            padding-bottom: 160px !important; /* 加大底部留白 */
+        }
     </style>
 </head>
-<body class="h-screen flex flex-col">
+<body class="flex flex-col">
 
-    <header class="sticky top-0 z-20 sys-panel p-4 flex justify-between items-center shadow-lg">
+    <header class="sticky top-0 z-20 sys-panel p-4 flex justify-between items-center shadow-lg bg-sys-bg">
         <h1 class="text-2xl font-bold tracking-wider uppercase text-sys-blue drop-shadow-[0_0_5px_rgba(0,225,255,0.8)]">
             <i class="fa-solid fa-microchip mr-2"></i>財務系統
         </h1>
@@ -142,9 +146,9 @@
         </button>
     </header>
 
-    <main id="main-content" class="flex-1 overflow-y-auto p-4 pb-24 space-y-6 relative"></main>
+    <main id="main-content" class="flex-1 overflow-y-auto p-4 space-y-6 relative"></main>
 
-    <nav class="fixed bottom-0 left-0 right-0 sys-panel z-20 shadow-[0_-5px_15px_rgba(0,0,0,0.5)]">
+    <nav class="fixed bottom-0 left-0 right-0 sys-panel z-20 shadow-[0_-5px_15px_rgba(0,0,0,0.5)] bg-sys-bg">
         <div class="flex justify-around">
             <button onclick="switchView('view-accounts')" class="nav-item w-full p-4 text-sys-text hover:text-sys-blue transition-all flex flex-col items-center" id="nav-accounts">
                 <i class="fa-solid fa-wallet text-xl mb-1"></i><span class="text-xs uppercase">帳戶總覽</span>
@@ -163,7 +167,7 @@
 
     <div id="modal-tx" class="fixed inset-0 z-50 hidden">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="toggleModal('modal-tx')"></div>
-        <div class="absolute bottom-0 left-0 right-0 sys-panel rounded-t-none shadow-[0_-5px_20px_rgba(0,225,255,0.2)] animate-[slideUp_0.3s_ease-out]">
+        <div class="absolute bottom-0 left-0 right-0 sys-panel rounded-t-none shadow-[0_-5px_20px_rgba(0,225,255,0.2)] animate-[slideUp_0.3s_ease-out] bg-sys-bg">
             <div class="p-6">
                 <div class="flex justify-between items-center mb-6 border-b border-sys-blue/30 pb-3">
                     <h3 class="text-xl font-bold text-sys-blue uppercase" id="modal-tx-title"><i class="fa-solid fa-pen-to-square mr-2"></i>新增紀錄</h3>
@@ -180,7 +184,7 @@
                             <select id="inp-type" class="w-full" onchange="updateCategoryOptions()">
                                 <option value="expense">支出 (Expense)</option>
                                 <option value="income">收入 (Income)</option>
-                                <option value="transfer">轉帳 (Transfer)</option>
+                                <option value="transfer">轉帳 / 繳費 (Transfer)</option>
                             </select>
                         </div>
                     </div>
@@ -231,7 +235,7 @@
 
     <div id="modal-account" class="fixed inset-0 z-50 hidden flex items-center justify-center">
         <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="toggleModal('modal-account')"></div>
-        <div class="sys-panel w-full max-w-md m-4 p-6 relative z-10">
+        <div class="sys-panel w-full max-w-md m-4 p-6 relative z-10 bg-sys-bg">
             <h3 class="text-xl font-bold text-sys-blue uppercase mb-4" id="modal-account-title">新增/編輯帳戶</h3>
             <input type="hidden" id="inp-acc-original-name">
             <div class="space-y-4">
@@ -251,7 +255,7 @@
 
     <div id="modal-cats" class="fixed inset-0 z-50 hidden flex items-center justify-center">
         <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="toggleModal('modal-cats')"></div>
-        <div class="sys-panel w-full max-w-md m-4 p-6 relative z-10 h-3/4 flex flex-col">
+        <div class="sys-panel w-full max-w-md m-4 p-6 relative z-10 h-3/4 flex flex-col bg-sys-bg">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold text-sys-blue uppercase"><i class="fa-solid fa-tags mr-2"></i>分類架構管理</h3>
                 <button onclick="toggleModal('modal-cats')" class="text-sys-text"><i class="fa-solid fa-xmark text-xl"></i></button>
@@ -270,7 +274,7 @@
 
     <div id="modal-rules" class="fixed inset-0 z-50 hidden flex items-center justify-center">
         <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="toggleModal('modal-rules')"></div>
-        <div class="sys-panel w-full max-w-md m-4 p-6 relative z-10 h-3/4 flex flex-col">
+        <div class="sys-panel w-full max-w-md m-4 p-6 relative z-10 h-3/4 flex flex-col bg-sys-bg">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold text-sys-blue uppercase"><i class="fa-solid fa-robot mr-2"></i>自動分類記憶庫</h3>
                 <button onclick="toggleModal('modal-rules')" class="text-sys-text"><i class="fa-solid fa-xmark text-xl"></i></button>
@@ -282,7 +286,7 @@
 
     <div id="modal-db" class="fixed inset-0 z-50 hidden flex items-center justify-center">
         <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="toggleModal('modal-db')"></div>
-        <div class="sys-panel w-full max-w-md m-4 p-6 relative z-10 border-sys-danger/50 shadow-[0_0_30px_rgba(255,51,51,0.1)]">
+        <div class="sys-panel w-full max-w-md m-4 p-6 relative z-10 border-sys-danger/50 shadow-[0_0_30px_rgba(255,51,51,0.1)] bg-sys-bg">
             <div class="flex justify-between items-center mb-6 border-b border-sys-danger/30 pb-3">
                 <h3 class="text-xl font-bold text-sys-danger uppercase"><i class="fa-solid fa-shield-halved mr-2"></i>系統核心 (Core)</h3>
                 <button onclick="toggleModal('modal-db')" class="text-sys-text hover:text-sys-danger"><i class="fa-solid fa-xmark text-2xl"></i></button>
@@ -303,12 +307,13 @@
 
     <script>
         // ================= STATE =================
-        const APP_ID = 'finsys_solo_v5';
-        const DEFAULT_ACCOUNTS = ['永豐 (活存)', '永豐 (預收暫存)', '現金'];
+        const APP_ID = 'finsys_solo_v7';
+        // V7: Ensure '信用卡' is in defaults
+        const DEFAULT_ACCOUNTS = ['永豐 (活存)', '永豐 (預收暫存)', '現金', '信用卡'];
         const DEFAULT_CATEGORIES = {
             expense: ['餐飲', '交通', '購物', '娛樂', '居住', '醫療', '其他支出'],
             income: ['薪資', '課程收入', '預收學費', '投資'],
-            transfer: ['內部轉帳', '核銷認列']
+            transfer: ['內部轉帳', '核銷認列', '信用卡繳費']
         };
 
         let state = {
@@ -442,7 +447,6 @@
             const netMonth = incomeMonth - expenseMonth;
 
             const yearOptions = getAvailableYears().map(y => `<option value="${y}" ${y === state.ui.chartYear ? 'selected' : ''}>${y} 年</option>`).join('');
-            // 修正：全年總覽 改為 全年
             const monthOptions = `<option value="all" ${state.ui.chartMonth === 'all' ? 'selected' : ''}>全年</option>` + 
                                  Array.from({length: 12}, (_, i) => `<option value="${i}" ${state.ui.chartMonth == i ? 'selected' : ''}>${i+1} 月</option>`).join('');
 
@@ -632,7 +636,7 @@
                     </div>
                     <div class="sys-panel p-6 border-t-4 border-sys-purple mt-4">
                         <h3 class="text-lg font-bold text-sys-purple uppercase mb-4"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>智能批次解析</h3>
-                        <textarea id="batch-input" rows="3" placeholder="貼上文字，如：12/25 午餐 150 現金" class="w-full mb-4 font-mono text-sm"></textarea>
+                        <textarea id="batch-input" rows="4" placeholder="貼上文字，如：&#10;12/25 Costco餐飲 500 信用卡&#10;12/25 Costco代墊 1800 信用卡" class="w-full mb-4 font-mono text-sm"></textarea>
                         <button onclick="processBatch()" class="sys-btn w-full !border-sys-purple !text-sys-purple hover:!bg-sys-purple hover:!text-white">執行解析程序</button>
                     </div>
                 </div>
