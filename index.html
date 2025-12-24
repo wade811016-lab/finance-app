@@ -36,7 +36,6 @@
     </script>
 
     <style>
-        /* [Mobile Viewport Fix] 使用 dynamic viewport height 解決手機網址列遮擋問題 */
         :root { color-scheme: dark; }
         
         body { 
@@ -44,13 +43,11 @@
             color: theme('colors.sys.text'); 
             font-family: 'Rajdhani', sans-serif; 
             overflow-x: hidden;
-            /* 關鍵：確保 body 佔滿動態高度 */
             min-height: 100dvh;
             display: flex;
             flex-direction: column;
         }
         
-        /* 自定義捲軸 */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: theme('colors.sys.bg'); }
         ::-webkit-scrollbar-thumb { background: theme('colors.sys.blue'); }
@@ -67,7 +64,7 @@
             background: linear-gradient(90deg, transparent, theme('colors.sys.blue'), transparent);
         }
 
-        /* [Anti-White Flash V7] 強制深色表單與移除動畫 */
+        /* Anti-White Flash & Form Fixes */
         input, select, textarea {
             background-color: #1a1a2e !important;
             border: 1px solid theme('colors.sys.blue') !important;
@@ -100,7 +97,6 @@
             padding-right: 2.5rem !important; 
         }
 
-        /* 儀表板下拉選單樣式修正 */
         .dashboard-select { 
             padding-top: 0 !important; 
             padding-bottom: 0 !important; 
@@ -111,7 +107,6 @@
             width: auto;
         }
 
-        /* 按鈕樣式 */
         .sys-btn {
             border: 1px solid theme('colors.sys.blue'); color: theme('colors.sys.blue');
             text-transform: uppercase; letter-spacing: 1px; font-weight: bold;
@@ -129,10 +124,11 @@
         @keyframes slideInRight { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
         .system-toast { animation: slideInRight 0.4s ease-out forwards; border-left: 4px solid theme('colors.sys.blue'); }
         
-        /* [Mobile Layout Fix] 確保底部導航不遮擋內容 */
-        #main-content {
-            padding-bottom: 160px !important; /* 加大底部留白 */
-        }
+        #main-content { padding-bottom: 160px !important; }
+        
+        /* Split Modal Styles */
+        .split-row { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="flex flex-col">
@@ -174,7 +170,8 @@
                     <button onclick="toggleModal('modal-tx')" class="text-sys-text hover:text-sys-danger"><i class="fa-solid fa-xmark text-2xl"></i></button>
                 </div>
                 <form id="form-tx" class="space-y-5">
-                    <input type="hidden" id="inp-id"> <div class="grid grid-cols-2 gap-4">
+                    <input type="hidden" id="inp-id">
+                    <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sys-blue text-sm font-bold mb-2 uppercase">日期</label>
                             <input type="date" id="inp-date" required class="w-full">
@@ -206,8 +203,14 @@
 
                     <div>
                         <label class="block text-sys-blue text-sm font-bold mb-2 uppercase">金額</label>
-                        <input type="number" id="inp-amount" placeholder="0" required min="0" step="0.01" class="w-full text-2xl font-bold text-sys-blue">
+                        <div class="flex gap-2">
+                            <input type="number" id="inp-amount" placeholder="0" required min="0" step="0.01" class="w-full text-2xl font-bold text-sys-blue">
+                            <button type="button" onclick="openSplitModal()" class="sys-btn px-4 bg-sys-blue/10 border-sys-purple text-sys-purple hover:bg-sys-purple hover:text-white" title="拆帳計算機">
+                                <i class="fa-solid fa-scissors"></i> 拆帳
+                            </button>
+                        </div>
                     </div>
+                    
                     <div class="grid grid-cols-2 gap-4" id="account-group">
                         <div>
                             <label class="block text-sys-blue text-sm font-bold mb-2 uppercase" id="lbl-from">帳戶</label>
@@ -233,6 +236,43 @@
         </div>
     </div>
 
+    <div id="modal-split" class="fixed inset-0 z-[60] hidden">
+        <div class="absolute inset-0 bg-black/95 backdrop-blur-sm" onclick="toggleModal('modal-split')"></div>
+        <div class="absolute inset-0 flex flex-col bg-sys-bg">
+            <div class="p-4 border-b border-sys-blue flex justify-between items-center bg-sys-panel z-10">
+                <h3 class="text-xl font-bold text-sys-purple uppercase"><i class="fa-solid fa-scissors mr-2"></i>消費拆帳 (Split)</h3>
+                <button onclick="toggleModal('modal-split')" class="text-sys-text hover:text-sys-danger"><i class="fa-solid fa-xmark text-2xl"></i></button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                <div class="mb-4 text-center">
+                    <p class="text-gray-400 text-xs uppercase tracking-widest mb-1">總金額 (Total)</p>
+                    <div class="text-3xl font-bold text-sys-blue" id="split-display-total">$0</div>
+                </div>
+
+                <div id="split-rows-container" class="space-y-3">
+                    </div>
+                
+                <div id="split-ghost-row" class="hidden mt-3 p-3 border border-dashed border-gray-600 rounded bg-gray-900/50 opacity-70 cursor-pointer hover:opacity-100 hover:border-sys-blue hover:bg-sys-blue/5 transition-all" onclick="addSplitRowFromGhost()">
+                    <div class="flex items-center justify-between text-gray-400 pointer-events-none">
+                        <span><i class="fa-solid fa-plus-circle mr-2"></i> 點擊自動填入剩餘款項</span>
+                        <span class="font-bold font-mono text-sys-purple" id="split-ghost-amount">$0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-sys-blue bg-sys-panel z-10 flex gap-3">
+                <div class="flex-1 text-xs flex flex-col justify-center">
+                    <span class="text-gray-400">已分配: <span id="split-display-sum" class="text-sys-text font-bold">$0</span></span>
+                    <span class="text-gray-400">剩餘: <span id="split-display-remain" class="text-sys-danger font-bold">$0</span></span>
+                </div>
+                <button onclick="saveSplit()" class="sys-btn flex-1 !border-sys-purple !text-sys-purple hover:!bg-sys-purple hover:!text-white">
+                    <i class="fa-solid fa-check-double mr-2"></i> 確認拆帳
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="modal-account" class="fixed inset-0 z-50 hidden flex items-center justify-center">
         <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="toggleModal('modal-account')"></div>
         <div class="sys-panel w-full max-w-md m-4 p-6 relative z-10 bg-sys-bg">
@@ -246,7 +286,6 @@
                 <div>
                     <label class="block text-sys-blue text-sm font-bold mb-2">當前/初始 餘額</label>
                     <input type="number" id="inp-acc-balance" class="w-full" step="1" placeholder="0">
-                    <p class="text-xs text-gray-400 mt-1">* 建議您建立一個「預收暫存」帳戶來管理學費。</p>
                 </div>
                 <button onclick="saveAccount()" class="sys-btn w-full">確認儲存</button>
             </div>
@@ -307,8 +346,7 @@
 
     <script>
         // ================= STATE =================
-        const APP_ID = 'finsys_solo_v7';
-        // V7: Ensure '信用卡' is in defaults
+        const APP_ID = 'finsys_solo_v8';
         const DEFAULT_ACCOUNTS = ['永豐 (活存)', '永豐 (預收暫存)', '現金', '信用卡'];
         const DEFAULT_CATEGORIES = {
             expense: ['餐飲', '交通', '購物', '娛樂', '居住', '醫療', '其他支出'],
@@ -329,6 +367,11 @@
                 activeAccountDetail: null,
                 catManageType: 'expense'
             }
+        };
+
+        let splitState = {
+            total: 0,
+            rows: [] // {id, type, category, amount, note}
         };
 
         // ================= UTILS =================
@@ -371,14 +414,11 @@
             const index = state.transactions.findIndex(t => t.id === tx.id);
             if (index > -1) {
                 state.transactions[index] = { ...state.transactions[index], ...tx };
-                showSystemToast("紀錄已更新");
             } else {
-                state.transactions.unshift({ id: Date.now().toString(), createdAt: new Date().toISOString(), ...tx });
-                showSystemToast("紀錄已新增");
+                state.transactions.unshift({ id: Date.now().toString() + Math.random().toString(36).substr(2,5), createdAt: new Date().toISOString(), ...tx });
                 learnKeyword(tx.note, tx.category, tx.type);
             }
             saveData();
-            toggleModal('modal-tx');
         };
 
         const deleteCurrentTx = () => {
@@ -410,6 +450,148 @@
             });
             return balance;
         };
+
+        // ================= SPLIT LOGIC (V8 New Feature) =================
+        const openSplitModal = () => {
+            const amountStr = document.getElementById('inp-amount').value;
+            if(!amountStr || parseFloat(amountStr) <= 0) return showSystemToast("請先輸入總金額", "error");
+            
+            const total = parseFloat(amountStr);
+            const parentType = document.getElementById('inp-type').value;
+            const parentCat = document.getElementById('inp-category').value;
+            
+            // Initialize split state
+            splitState = {
+                total: total,
+                rows: [
+                    // Start with 1 row = total
+                    { id: Date.now(), type: parentType, category: parentCat, amount: total, note: '' }
+                ]
+            };
+            
+            document.getElementById('split-display-total').innerText = formatCurrency(total);
+            renderSplitRows();
+            toggleModal('modal-split');
+        };
+
+        const renderSplitRows = () => {
+            const container = document.getElementById('split-rows-container');
+            container.innerHTML = '';
+            
+            let sum = 0;
+            
+            splitState.rows.forEach((row, index) => {
+                sum += parseFloat(row.amount) || 0;
+                
+                const rowEl = document.createElement('div');
+                rowEl.className = 'split-row sys-panel p-3 border-l-4 border-sys-purple';
+                rowEl.innerHTML = `
+                    <div class="flex gap-2 mb-2">
+                        <select onchange="updateSplitRow(${index}, 'type', this.value)" class="w-1/3 text-xs p-1 h-8 !bg-sys-bg">
+                            <option value="expense" ${row.type==='expense'?'selected':''}>支出</option>
+                            <option value="income" ${row.type==='income'?'selected':''}>收入</option>
+                            </select>
+                        <select onchange="updateSplitRow(${index}, 'category', this.value)" class="w-2/3 text-xs p-1 h-8 !bg-sys-bg split-cat-select" data-val="${row.category}" data-type="${row.type}">
+                            </select>
+                    </div>
+                    <div class="flex gap-2 items-center">
+                        <input type="number" value="${row.amount}" onchange="updateSplitRow(${index}, 'amount', this.value)" class="w-24 font-bold text-sys-blue text-right h-10" placeholder="0">
+                        <input type="text" value="${row.note}" onchange="updateSplitRow(${index}, 'note', this.value)" class="flex-1 h-10 text-sm" placeholder="備註...">
+                        ${splitState.rows.length > 1 ? `<button onclick="removeSplitRow(${index})" class="text-gray-500 hover:text-sys-danger px-2"><i class="fa-solid fa-trash"></i></button>` : ''}
+                    </div>
+                `;
+                container.appendChild(rowEl);
+                
+                // Populate categories for this row
+                const catSelect = rowEl.querySelector('.split-cat-select');
+                const cats = state.categories[row.type] || [];
+                cats.forEach(c => catSelect.add(new Option(c, c, false, c === row.category)));
+            });
+
+            // Update footer stats
+            const remain = splitState.total - sum;
+            document.getElementById('split-display-sum').innerText = formatCurrency(sum);
+            const remainEl = document.getElementById('split-display-remain');
+            remainEl.innerText = formatCurrency(remain);
+            remainEl.className = remain === 0 ? 'text-sys-success font-bold' : 'text-sys-danger font-bold';
+
+            // Ghost Row Logic (Auto-Fill)
+            const ghost = document.getElementById('split-ghost-row');
+            if (remain > 0) {
+                ghost.classList.remove('hidden');
+                document.getElementById('split-ghost-amount').innerText = formatCurrency(remain);
+            } else {
+                ghost.classList.add('hidden');
+            }
+        };
+
+        const updateSplitRow = (index, field, value) => {
+            if (field === 'amount') value = parseFloat(value) || 0;
+            splitState.rows[index][field] = value;
+            
+            // If type changed, reset category to first available
+            if (field === 'type') {
+                 const cats = state.categories[value] || [];
+                 splitState.rows[index].category = cats[0] || '';
+            }
+            renderSplitRows();
+        };
+
+        const addSplitRowFromGhost = () => {
+            const currentSum = splitState.rows.reduce((s, r) => s + (parseFloat(r.amount)||0), 0);
+            const remain = splitState.total - currentSum;
+            if (remain <= 0) return;
+
+            // Inherit type from parent or previous row
+            const baseRow = splitState.rows[splitState.rows.length - 1];
+            
+            splitState.rows.push({
+                id: Date.now(),
+                type: baseRow.type,
+                category: baseRow.category,
+                amount: remain, // Auto-fill amount
+                note: ''
+            });
+            renderSplitRows();
+        };
+
+        const removeSplitRow = (index) => {
+            splitState.rows.splice(index, 1);
+            renderSplitRows();
+        };
+
+        const saveSplit = () => {
+            const sum = splitState.rows.reduce((s, r) => s + (parseFloat(r.amount)||0), 0);
+            if (Math.abs(sum - splitState.total) > 1) { // Tolerance for float
+                if (!confirm(`目前分配總額 (${sum}) 與總金額 (${splitState.total}) 不符。確定要儲存嗎？`)) return;
+            }
+
+            // Common fields from parent modal
+            const date = document.getElementById('inp-date').value;
+            const accountFrom = document.getElementById('inp-account-from').value;
+            
+            let savedCount = 0;
+            splitState.rows.forEach(row => {
+                const tx = {
+                    id: Date.now().toString() + Math.random().toString(36).substr(2,5),
+                    date: date,
+                    type: row.type,
+                    amount: parseFloat(row.amount),
+                    category: row.category,
+                    accountFrom: accountFrom,
+                    note: row.note,
+                    isVerified: true,
+                    isRealization: false
+                };
+                upsertTransaction(tx);
+                savedCount++;
+            });
+
+            showSystemToast(`成功拆分為 ${savedCount} 筆紀錄`);
+            toggleModal('modal-split');
+            toggleModal('modal-tx'); // Close parent too
+        };
+
 
         // ================= VIEW CONTROLLERS =================
         const switchView = (viewId) => {
@@ -712,6 +894,7 @@
             }
 
             upsertTransaction(tx);
+            if(!document.getElementById('inp-id').value) toggleModal('modal-tx');
         });
 
         const populateAccountSelects = () => {
