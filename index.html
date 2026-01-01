@@ -64,8 +64,6 @@
             background: linear-gradient(90deg, transparent, theme('colors.sys.blue'), transparent);
         }
 
-        /* [Fix V9.2] 分離 Input 樣式，恢復 Checkbox 顯示 */
-        /* 1. 針對文字輸入框、下拉選單、文字區域：移除預設外觀以防白屏 */
         input:not([type="checkbox"]), select, textarea {
             background-color: #1a1a2e !important;
             border: 1px solid theme('colors.sys.blue') !important;
@@ -78,11 +76,10 @@
             color-scheme: dark; 
         }
         
-        /* 2. 針對 Checkbox：恢復預設外觀但指定顏色 */
         input[type="checkbox"] {
             -webkit-appearance: checkbox !important;
             appearance: auto !important;
-            accent-color: theme('colors.sys.blue'); /* 使用系統藍作為勾選色 */
+            accent-color: theme('colors.sys.blue'); 
             width: 1.25rem; 
             height: 1.25rem;
             cursor: pointer;
@@ -430,7 +427,7 @@
                 learnKeyword(tx.note, tx.category, tx.type);
             }
             saveData();
-            toggleModal('modal-tx');
+            // Auto close is handled in form submit now
         };
 
         const deleteCurrentTx = () => {
@@ -620,7 +617,11 @@
             const thisMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             let incomeMonth = 0, expenseMonth = 0;
             
+            // Logic Update: exclude System Adjustment from income
             state.transactions.filter(tx => tx.date.startsWith(thisMonthPrefix)).forEach(tx => {
+                // Check if system adjustment
+                if (tx.category === '系統調整') return;
+
                 const amt = parseFloat(tx.amount);
                 if (tx.type === 'income' && tx.isVerified !== false) incomeMonth += amt;
                 if (tx.type === 'transfer' && tx.isRealization === true) incomeMonth += amt;
@@ -658,9 +659,38 @@
                         </div>
                     </div>
                     <div class="h-64"><canvas id="mainChart"></canvas></div>
+                    
+                    <div class="mt-6 border-t border-sys-blue/20 pt-4">
+                        <h4 class="text-sm font-bold text-gray-400 mb-3 uppercase">該區間帳務明細</h4>
+                        <div id="dashboard-tx-list" class="space-y-3">
+                            </div>
+                    </div>
                 </div>
             `;
             renderChart();
+            renderDashboardList(); // Call list renderer
+        };
+
+        // New Helper for Dashboard List
+        const renderDashboardList = () => {
+            const container = document.getElementById('dashboard-tx-list');
+            if(!container) return;
+
+            const targetYear = state.ui.chartYear;
+            const targetMonth = state.ui.chartMonth;
+            
+            const filtered = state.transactions.filter(tx => {
+                const date = new Date(tx.date);
+                const matchYear = date.getFullYear() === targetYear;
+                const matchMonth = targetMonth === 'all' ? true : date.getMonth() === parseInt(targetMonth);
+                return matchYear && matchMonth;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 text-sm py-4">無資料</div>';
+            } else {
+                container.innerHTML = filtered.map(tx => renderTransactionItem(tx, false)).join('');
+            }
         };
 
         const getAvailableYears = () => {
@@ -685,6 +715,9 @@
                     const prefix = `${targetYear}-${String(i + 1).padStart(2, '0')}`;
                     let inc = 0, exp = 0;
                     state.transactions.filter(tx => tx.date.startsWith(prefix)).forEach(tx => {
+                        // Skip system adjustment in chart too
+                        if (tx.category === '系統調整') return;
+
                         const amt = parseFloat(tx.amount);
                         if (tx.type === 'income' && tx.isVerified !== false) inc += amt;
                         if (tx.type === 'transfer' && tx.isRealization === true) inc += amt;
@@ -890,7 +923,8 @@
             }
 
             upsertTransaction(tx);
-            if(!document.getElementById('inp-id').value) toggleModal('modal-tx');
+            // Fix: Close modal automatically on successful submit
+            toggleModal('modal-tx');
         });
 
         const populateAccountSelects = () => {
