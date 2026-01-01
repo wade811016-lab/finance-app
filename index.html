@@ -64,7 +64,9 @@
             background: linear-gradient(90deg, transparent, theme('colors.sys.blue'), transparent);
         }
 
-        input, select, textarea {
+        /* [Fix V9.2] 分離 Input 樣式，恢復 Checkbox 顯示 */
+        /* 1. 針對文字輸入框、下拉選單、文字區域：移除預設外觀以防白屏 */
+        input:not([type="checkbox"]), select, textarea {
             background-color: #1a1a2e !important;
             border: 1px solid theme('colors.sys.blue') !important;
             color: theme('colors.sys.text') !important;
@@ -76,6 +78,18 @@
             color-scheme: dark; 
         }
         
+        /* 2. 針對 Checkbox：恢復預設外觀但指定顏色 */
+        input[type="checkbox"] {
+            -webkit-appearance: checkbox !important;
+            appearance: auto !important;
+            accent-color: theme('colors.sys.blue'); /* 使用系統藍作為勾選色 */
+            width: 1.25rem; 
+            height: 1.25rem;
+            cursor: pointer;
+            border: 1px solid theme('colors.sys.blue');
+            background-color: transparent;
+        }
+
         input:focus, select:focus, textarea:focus {
             outline: none !important;
             box-shadow: theme('boxShadow.neon-blue') !important;
@@ -343,7 +357,7 @@
     <div id="system-toast-container" class="fixed top-20 right-4 z-50 flex flex-col space-y-4 pointer-events-none"></div>
 
     <script>
-        const APP_ID = 'finsys_solo_v9';
+        const APP_ID = 'finsys_solo_v9_2';
         const DEFAULT_ACCOUNTS = ['永豐 (活存)', '永豐 (預收暫存)', '現金', '信用卡'];
         const DEFAULT_CATEGORIES = {
             expense: ['餐飲', '交通', '購物', '娛樂', '居住', '醫療', '其他支出'],
