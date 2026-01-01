@@ -24,7 +24,8 @@
                             text: '#e0e0ff',
                             danger: '#ff3333',
                             success: '#33ff57',
-                            warn: '#ffbb00'
+                            warn: '#ffbb00',
+                            gray: '#94a3b8'
                         }
                     },
                     boxShadow: {
@@ -210,6 +211,14 @@
                        <p class="text-xs text-gray-400 mt-1 pl-2">* 勾選後，此筆轉帳金額將計入「本月收入」圖表。</p>
                    </div>
 
+                   <div id="option-exclude" class="hidden">
+                        <label class="flex items-center space-x-3 p-3 sys-panel cursor-pointer border-sys-gray/50">
+                            <input type="checkbox" id="inp-excluded" class="form-checkbox h-5 w-5 text-sys-gray bg-transparent border-sys-gray rounded-none focus:ring-0 focus:ring-offset-0">
+                            <span class="text-sys-text font-bold text-sys-gray">🚫 不列入收支統計</span>
+                        </label>
+                        <p class="text-xs text-gray-400 mt-1 pl-2">* 勾選後，此筆金額只會調整帳戶餘額，不計入圖表。</p>
+                   </div>
+
                     <div>
                         <label class="block text-sys-blue text-sm font-bold mb-2 uppercase">金額</label>
                         <div class="flex gap-2">
@@ -369,7 +378,7 @@
             keywordMap: {}, 
             settings: { currency: 'TWD' },
             ui: {
-                currentView: 'view-accounts',
+                currentView: 'view-accounts', // Default view but handled in init
                 chartYear: new Date().getFullYear(),
                 chartMonth: 'all',
                 activeAccountDetail: null,
@@ -409,7 +418,8 @@
                     state.transactions = state.transactions.map(tx => ({ 
                         ...tx, 
                         isVerified: tx.hasOwnProperty('isVerified') ? tx.isVerified : true,
-                        isRealization: tx.hasOwnProperty('isRealization') ? tx.isRealization : false
+                        isRealization: tx.hasOwnProperty('isRealization') ? tx.isRealization : false,
+                        isExcluded: tx.hasOwnProperty('isExcluded') ? tx.isExcluded : false // New Field
                     }));
                 } catch (e) { showSystemToast("資料載入失敗", 'error'); }
             }
@@ -581,7 +591,8 @@
                     accountFrom: accountFrom,
                     note: row.note,
                     isVerified: true,
-                    isRealization: false
+                    isRealization: false,
+                    isExcluded: false 
                 };
                 upsertTransaction(tx);
                 savedCount++;
@@ -617,10 +628,9 @@
             const thisMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
             let incomeMonth = 0, expenseMonth = 0;
             
-            // Logic Update: exclude System Adjustment from income
             state.transactions.filter(tx => tx.date.startsWith(thisMonthPrefix)).forEach(tx => {
-                // Check if system adjustment
-                if (tx.category === '系統調整') return;
+                // [V9.4 Fix] Exclude logic
+                if (tx.category === '系統調整' || tx.category === '帳戶餘額調整' || tx.isExcluded) return;
 
                 const amt = parseFloat(tx.amount);
                 if (tx.type === 'income' && tx.isVerified !== false) incomeMonth += amt;
@@ -663,15 +673,14 @@
                     <div class="mt-6 border-t border-sys-blue/20 pt-4">
                         <h4 class="text-sm font-bold text-gray-400 mb-3 uppercase">該區間帳務明細</h4>
                         <div id="dashboard-tx-list" class="space-y-3">
-                            </div>
+                        </div>
                     </div>
                 </div>
             `;
             renderChart();
-            renderDashboardList(); // Call list renderer
+            renderDashboardList(); 
         };
 
-        // New Helper for Dashboard List
         const renderDashboardList = () => {
             const container = document.getElementById('dashboard-tx-list');
             if(!container) return;
@@ -715,8 +724,8 @@
                     const prefix = `${targetYear}-${String(i + 1).padStart(2, '0')}`;
                     let inc = 0, exp = 0;
                     state.transactions.filter(tx => tx.date.startsWith(prefix)).forEach(tx => {
-                        // Skip system adjustment in chart too
-                        if (tx.category === '系統調整') return;
+                        // [V9.4 Fix] Exclude logic
+                        if (tx.category === '系統調整' || tx.category === '帳戶餘額調整' || tx.isExcluded) return;
 
                         const amt = parseFloat(tx.amount);
                         if (tx.type === 'income' && tx.isVerified !== false) inc += amt;
@@ -729,6 +738,9 @@
                 const prefix = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}`;
                 const catMap = {};
                 state.transactions.filter(tx => tx.date.startsWith(prefix) && tx.type === 'expense').forEach(tx => {
+                    // [V9.4 Fix] Exclude logic for pie chart
+                    if (tx.category === '系統調整' || tx.category === '帳戶餘額調整' || tx.isExcluded) return;
+
                     catMap[tx.category] = (catMap[tx.category] || 0) + parseFloat(tx.amount);
                 });
                 const sorted = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
@@ -803,12 +815,14 @@
             const isExpense = tx.type === 'expense'; const isTransfer = tx.type === 'transfer';
             const isPending = tx.type === 'income' && tx.isVerified === false;
             const isRealization = tx.type === 'transfer' && tx.isRealization === true;
+            const isExcluded = tx.isExcluded === true;
             
             let icon = isExpense ? 'fa-arrow-trend-down' : (isTransfer ? 'fa-right-left' : 'fa-arrow-trend-up');
             let color = isExpense ? 'text-sys-danger' : (isTransfer ? 'text-sys-blue' : 'text-sys-success');
             
             if (isPending) { color = 'text-sys-warn'; icon = 'fa-clock'; }
             if (isRealization) { color = 'text-sys-success'; icon = 'fa-check-double'; }
+            if (isExcluded) { color = 'text-gray-500'; icon = 'fa-ban'; }
 
             return `
                 <div class="sys-panel p-4 flex justify-between items-center relative overflow-hidden group cursor-pointer hover:bg-sys-blue/5 transition-colors" onclick="openTransactionModal('${tx.id}')">
@@ -819,6 +833,7 @@
                                 ${tx.category} 
                                 ${isPending ? '(預收暫存)' : ''}
                                 ${isRealization ? '(核銷收入)' : ''}
+                                ${isExcluded ? '(不列入統計)' : ''}
                             </div>
                             <div class="text-xs text-gray-400">${tx.date} | ${tx.note || '無備註'}</div>
                         </div>
@@ -872,6 +887,7 @@
                 
                 document.getElementById('inp-deferred').checked = tx.isVerified === false;
                 document.getElementById('inp-realization').checked = tx.isRealization === true;
+                document.getElementById('inp-excluded').checked = tx.isExcluded === true; // [V9.4 Fix] Load excluded state
                 
                 populateAccountSelects();
                 updateCategoryOptions();
@@ -888,6 +904,7 @@
                 typeSelect.value = 'expense';
                 document.getElementById('inp-deferred').checked = false;
                 document.getElementById('inp-realization').checked = false;
+                document.getElementById('inp-excluded').checked = false;
                 populateAccountSelects();
                 updateCategoryOptions();
                 document.getElementById('btn-delete-tx').classList.add('hidden');
@@ -906,6 +923,7 @@
                 category: document.getElementById('inp-category').value,
                 accountFrom: document.getElementById('inp-account-from').value,
                 note: document.getElementById('inp-note').value,
+                isExcluded: false // Default
             };
             
             if (type === 'transfer') {
@@ -914,6 +932,8 @@
                 tx.isRealization = document.getElementById('inp-realization').checked;
             } else {
                 tx.isRealization = false;
+                // [V9.4 Fix] Save excluded state for Income/Expense
+                tx.isExcluded = document.getElementById('inp-excluded').checked;
             }
 
             if (type === 'income') {
@@ -945,6 +965,7 @@
             const lblFrom = document.getElementById('lbl-from');
             const revGroup = document.getElementById('option-deferred');
             const realGroup = document.getElementById('option-realization');
+            const exclGroup = document.getElementById('option-exclude'); // [V9.4]
             
             catSelect.innerHTML = '';
             state.categories[type].forEach(cat => catSelect.add(new Option(cat, cat)));
@@ -953,10 +974,12 @@
                 toGroup.classList.remove('hidden'); lblFrom.innerText = '轉出帳戶';
                 revGroup.classList.add('hidden');
                 realGroup.classList.remove('hidden');
+                exclGroup.classList.add('hidden');
             } else {
                 toGroup.classList.add('hidden'); lblFrom.innerText = type === 'income' ? '存入帳戶' : '支出帳戶';
                 revGroup.classList.toggle('hidden', type !== 'income');
                 realGroup.classList.add('hidden');
+                exclGroup.classList.remove('hidden'); // Show for Income/Expense
             }
         };
 
@@ -1130,6 +1153,8 @@
 
         document.documentElement.classList.add('dark');
         loadData();
+        // [V9.4 Fix] Always default to Accounts view on refresh
+        state.ui.currentView = 'view-accounts'; 
         renderApp();
     </script>
 </body>
