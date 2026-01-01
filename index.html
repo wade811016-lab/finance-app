@@ -137,20 +137,13 @@
         
         #main-content { padding-bottom: 160px !important; }
         
-        /* [V9.5 Fix] Modal Layout for Mobile - Fix Scrolling Issue */
         .modal-constraint {
-            max-height: 90dvh; /* Max height 90% of screen */
+            max-height: 90dvh; 
             display: flex;
             flex-direction: column;
         }
-        .modal-header {
-            flex: none; /* Header stays fixed */
-        }
-        .modal-body {
-            flex: 1;
-            overflow-y: auto; /* Only body scrolls */
-            min-height: 0;
-        }
+        .modal-header { flex: none; }
+        .modal-body { flex: 1; overflow-y: auto; min-height: 0; }
 
         .split-row { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -420,11 +413,10 @@
         const toggleModal = (modalId) => {
             const modal = document.getElementById(modalId);
             
-            // Special handling for the transaction modal to add flex class correctly
             if (modalId === 'modal-tx') {
                 if (modal.classList.contains('hidden')) {
                     modal.classList.remove('hidden');
-                    modal.classList.add('flex'); // Ensure flex is added for alignment
+                    modal.classList.add('flex');
                 } else {
                     modal.classList.add('hidden');
                     modal.classList.remove('flex');
@@ -496,13 +488,10 @@
             return balance;
         };
 
-        // [V9.5 Logic Fix] Centralized Logic to check if a transaction counts towards stats
+        // [V9.5 Logic]
         const shouldCountTx = (tx) => {
-            // 1. Excluded manually?
             if (tx.isExcluded) return false;
-            // 2. Specific System Categories? (Strict match)
             if (tx.category === '系統調整' || tx.category === '帳戶餘額調整') return false;
-            
             return true;
         };
 
@@ -665,7 +654,6 @@
             let incomeMonth = 0, expenseMonth = 0;
             
             state.transactions.filter(tx => tx.date.startsWith(thisMonthPrefix)).forEach(tx => {
-                // [V9.5 Logic Fix] Use logic helper
                 if (!shouldCountTx(tx)) return;
 
                 const amt = parseFloat(tx.amount);
@@ -760,7 +748,6 @@
                     const prefix = `${targetYear}-${String(i + 1).padStart(2, '0')}`;
                     let inc = 0, exp = 0;
                     state.transactions.filter(tx => tx.date.startsWith(prefix)).forEach(tx => {
-                        // [V9.5 Logic Fix] Use logic helper
                         if (!shouldCountTx(tx)) return;
 
                         const amt = parseFloat(tx.amount);
@@ -774,7 +761,6 @@
                 const prefix = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}`;
                 const catMap = {};
                 state.transactions.filter(tx => tx.date.startsWith(prefix) && tx.type === 'expense').forEach(tx => {
-                    // [V9.5 Logic Fix] Use logic helper
                     if (!shouldCountTx(tx)) return;
 
                     catMap[tx.category] = (catMap[tx.category] || 0) + parseFloat(tx.amount);
@@ -824,11 +810,12 @@
         const renderAccountDetail = (container, acc) => {
             const bal = getBalance(acc);
             const accountTx = state.transactions.filter(tx => tx.accountFrom === acc || tx.accountTo === acc);
+            // [V9.6 Fix] Clean Header
             container.innerHTML = `
                 <button onclick="state.ui.activeAccountDetail = null; renderApp()" class="mb-4 text-sys-blue hover:underline flex items-center uppercase font-bold"><i class="fa-solid fa-chevron-left mr-2"></i> 返回帳戶總覽</button>
                 <div class="sys-panel p-6 mb-6 border-l-4 border-sys-blue flex justify-between items-center">
                     <div>
-                        <h2 class="text-xl font-bold uppercase text-sys-blue mb-2">${acc} // 狀態詳情</h2>
+                        <h2 class="text-xl font-bold uppercase text-sys-blue mb-2">${acc}</h2>
                         <p class="text-3xl font-bold ${bal >= 0 ? 'text-sys-blue' : 'text-sys-danger'}">${formatCurrency(bal)}</p>
                     </div>
                     <button onclick="openAccountModal('${acc}')" class="sys-btn text-xs"><i class="fa-solid fa-pen mr-2"></i>編輯帳戶</button>
@@ -882,11 +869,37 @@
         };
 
         const renderSettings = (container) => {
+            // [V9.6] Enhanced Settings with Sorting
+            
+            // 1. Account List with Sorting
+            const accListHtml = state.accounts.map((acc, i) => `
+                <div class="flex justify-between items-center p-3 bg-sys-blue/5 border border-sys-blue/20">
+                    <span class="font-bold text-sm">${acc}</span>
+                    <div class="flex items-center gap-2">
+                        <button onclick="moveAccount(${i}, -1)" class="text-gray-500 hover:text-sys-blue ${i===0?'opacity-30 pointer-events-none':''}"><i class="fa-solid fa-arrow-up"></i></button>
+                        <button onclick="moveAccount(${i}, 1)" class="text-gray-500 hover:text-sys-blue ${i===state.accounts.length-1?'opacity-30 pointer-events-none':''}"><i class="fa-solid fa-arrow-down"></i></button>
+                        <button onclick="deleteMeta('account', '${acc}')" class="text-gray-500 hover:text-sys-danger ml-2"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+            `).join('');
+
             container.innerHTML = `
                 <h2 class="text-xl font-bold text-sys-blue uppercase mb-6 tracking-widest">系統設定 & 工具</h2>
+                
+                <div class="sys-panel p-6 mb-6">
+                    <h3 class="text-lg font-bold text-sys-blue uppercase mb-4"><i class="fa-solid fa-wallet mr-2"></i>帳戶管理</h3>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="new-account-name-settings" placeholder="新增帳戶名稱..." class="flex-1">
+                        <button onclick="addAccountSettings()" class="sys-btn py-1 px-4"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                    <div class="max-h-60 overflow-y-auto custom-scrollbar pr-2 space-y-1">
+                        ${accListHtml}
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 gap-4">
                     <div onclick="openCatsModal()" class="sys-panel p-6 flex justify-between items-center cursor-pointer hover:border-sys-blue transition-all group">
-                        <div><h3 class="text-lg font-bold text-sys-blue uppercase"><i class="fa-solid fa-tags mr-2"></i>分類架構管理</h3><p class="text-xs text-gray-400">新增或移除支出/收入分類</p></div>
+                        <div><h3 class="text-lg font-bold text-sys-blue uppercase"><i class="fa-solid fa-tags mr-2"></i>分類架構管理</h3><p class="text-xs text-gray-400">新增、移除或排序分類</p></div>
                         <i class="fa-solid fa-chevron-right text-sys-blue opacity-50 group-hover:opacity-100"></i>
                     </div>
                     <div onclick="openRulesModal()" class="sys-panel p-6 flex justify-between items-center cursor-pointer hover:border-sys-blue transition-all group">
@@ -904,6 +917,29 @@
                     </div>
                 </div>
             `;
+        };
+
+        // [V9.6] Settings Logic for Accounts
+        const addAccountSettings = () => {
+            const val = document.getElementById('new-account-name-settings').value.trim();
+            if(val && !state.accounts.includes(val)) {
+                state.accounts.push(val);
+                saveData();
+            }
+        };
+        const deleteMeta = (type, val) => {
+            if(confirm(`確定刪除 [${val}]?`)) {
+                if(type === 'account') state.accounts = state.accounts.filter(a => a !== val);
+                saveData();
+            }
+        };
+        const moveAccount = (index, dir) => {
+            if (dir === -1 && index > 0) {
+                [state.accounts[index], state.accounts[index-1]] = [state.accounts[index-1], state.accounts[index]];
+            } else if (dir === 1 && index < state.accounts.length - 1) {
+                [state.accounts[index], state.accounts[index+1]] = [state.accounts[index+1], state.accounts[index]];
+            }
+            saveData();
         };
 
         const openTransactionModal = (id = null) => {
@@ -1106,14 +1142,22 @@
                 tabInc.className = "flex-1 py-2 text-sm text-sys-blue border-b-2 border-sys-blue font-bold";
                 tabExp.className = "flex-1 py-2 text-sm text-gray-500";
             }
-            const list = state.categories[type].map(c => `
+            
+            // [V9.6] Updated List with Sorting Controls
+            const list = state.categories[type].map((c, i) => `
                 <div class="flex justify-between items-center p-3 bg-sys-blue/5 border border-sys-blue/20">
-                    <span>${c}</span>
-                    <button onclick="deleteCategory('${type}', '${c}')" class="text-gray-500 hover:text-sys-danger"><i class="fa-solid fa-xmark"></i></button>
+                    <span class="text-sm">${c}</span>
+                    <div class="flex items-center gap-2">
+                        <button onclick="moveCategory(${i}, -1)" class="text-gray-500 hover:text-sys-blue ${i===0?'opacity-30 pointer-events-none':''}"><i class="fa-solid fa-arrow-up"></i></button>
+                        <button onclick="moveCategory(${i}, 1)" class="text-gray-500 hover:text-sys-blue ${i===state.categories[type].length-1?'opacity-30 pointer-events-none':''}"><i class="fa-solid fa-arrow-down"></i></button>
+                        <button onclick="deleteCategory('${type}', '${c}')" class="text-gray-500 hover:text-sys-danger ml-2"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
                 </div>
             `).join('');
             document.getElementById('cat-list-container').innerHTML = list;
         };
+        
+        // [V9.6] Category Logic
         const addCategory = () => {
             const val = document.getElementById('new-cat-name').value.trim();
             const type = state.ui.catManageType;
@@ -1128,6 +1172,15 @@
                 state.categories[type] = state.categories[type].filter(c => c !== val);
                 saveData(); renderCatList();
             }
+        };
+        const moveCategory = (index, dir) => {
+            const type = state.ui.catManageType;
+            if (dir === -1 && index > 0) {
+                [state.categories[type][index], state.categories[type][index-1]] = [state.categories[type][index-1], state.categories[type][index]];
+            } else if (dir === 1 && index < state.categories[type].length - 1) {
+                [state.categories[type][index], state.categories[type][index+1]] = [state.categories[type][index+1], state.categories[type][index]];
+            }
+            saveData(); renderCatList();
         };
 
         const openRulesModal = () => { toggleModal('modal-rules'); renderRuleList(); };
@@ -1187,7 +1240,6 @@
 
         document.documentElement.classList.add('dark');
         loadData();
-        // Always default to Accounts view on refresh
         state.ui.currentView = 'view-accounts'; 
         renderApp();
     </script>
