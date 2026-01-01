@@ -137,6 +137,21 @@
         
         #main-content { padding-bottom: 160px !important; }
         
+        /* [V9.5 Fix] Modal Layout for Mobile - Fix Scrolling Issue */
+        .modal-constraint {
+            max-height: 90dvh; /* Max height 90% of screen */
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header {
+            flex: none; /* Header stays fixed */
+        }
+        .modal-body {
+            flex: 1;
+            overflow-y: auto; /* Only body scrolls */
+            min-height: 0;
+        }
+
         .split-row { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -171,14 +186,14 @@
         </div>
     </nav>
 
-    <div id="modal-tx" class="fixed inset-0 z-50 hidden">
+    <div id="modal-tx" class="fixed inset-0 z-50 hidden justify-center items-end sm:items-center">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="toggleModal('modal-tx')"></div>
-        <div class="absolute bottom-0 left-0 right-0 sys-panel rounded-t-none shadow-[0_-5px_20px_rgba(0,225,255,0.2)] animate-[slideUp_0.3s_ease-out] bg-sys-bg">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-6 border-b border-sys-blue/30 pb-3">
-                    <h3 class="text-xl font-bold text-sys-blue uppercase" id="modal-tx-title"><i class="fa-solid fa-pen-to-square mr-2"></i>新增紀錄</h3>
-                    <button onclick="toggleModal('modal-tx')" class="text-sys-text hover:text-sys-danger"><i class="fa-solid fa-xmark text-2xl"></i></button>
-                </div>
+        <div class="relative w-full sm:w-auto sm:max-w-lg bg-sys-bg rounded-t-2xl sm:rounded-2xl shadow-[0_-5px_20px_rgba(0,225,255,0.2)] animate-[slideUp_0.3s_ease-out] modal-constraint">
+            <div class="p-6 border-b border-sys-blue/30 pb-3 modal-header flex justify-between items-center">
+                <h3 class="text-xl font-bold text-sys-blue uppercase" id="modal-tx-title"><i class="fa-solid fa-pen-to-square mr-2"></i>新增紀錄</h3>
+                <button onclick="toggleModal('modal-tx')" class="text-sys-text hover:text-sys-danger"><i class="fa-solid fa-xmark text-2xl"></i></button>
+            </div>
+            <div class="p-6 modal-body custom-scrollbar">
                 <form id="form-tx" class="space-y-5">
                     <input type="hidden" id="inp-id">
                     <div class="grid grid-cols-2 gap-4">
@@ -247,7 +262,7 @@
                         <label class="block text-sys-blue text-sm font-bold mb-2 uppercase">備註 / 描述</label>
                         <input type="text" id="inp-note" placeholder="例如：全家午餐" class="w-full">
                     </div>
-                    <button type="submit" class="sys-btn w-full py-4 text-lg"><i class="fa-solid fa-floppy-disk mr-2"></i> 確認登錄</button>
+                    <button type="submit" class="sys-btn w-full py-4 text-lg mb-4"><i class="fa-solid fa-floppy-disk mr-2"></i> 確認登錄</button>
                     <button type="button" id="btn-delete-tx" class="hidden sys-btn sys-btn-danger w-full mt-2" onclick="deleteCurrentTx()"><i class="fa-solid fa-trash mr-2"></i> 刪除紀錄</button>
                 </form>
             </div>
@@ -378,7 +393,7 @@
             keywordMap: {}, 
             settings: { currency: 'TWD' },
             ui: {
-                currentView: 'view-accounts', // Default view but handled in init
+                currentView: 'view-accounts', 
                 chartYear: new Date().getFullYear(),
                 chartMonth: 'all',
                 activeAccountDetail: null,
@@ -404,7 +419,19 @@
 
         const toggleModal = (modalId) => {
             const modal = document.getElementById(modalId);
-            modal.classList.toggle('hidden');
+            
+            // Special handling for the transaction modal to add flex class correctly
+            if (modalId === 'modal-tx') {
+                if (modal.classList.contains('hidden')) {
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex'); // Ensure flex is added for alignment
+                } else {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+            } else {
+                modal.classList.toggle('hidden');
+            }
         };
 
         const formatCurrency = (num) => new Intl.NumberFormat('zh-TW', { style: 'currency', currency: state.settings.currency, minimumFractionDigits: 0 }).format(num);
@@ -419,7 +446,7 @@
                         ...tx, 
                         isVerified: tx.hasOwnProperty('isVerified') ? tx.isVerified : true,
                         isRealization: tx.hasOwnProperty('isRealization') ? tx.isRealization : false,
-                        isExcluded: tx.hasOwnProperty('isExcluded') ? tx.isExcluded : false // New Field
+                        isExcluded: tx.hasOwnProperty('isExcluded') ? tx.isExcluded : false
                     }));
                 } catch (e) { showSystemToast("資料載入失敗", 'error'); }
             }
@@ -437,7 +464,6 @@
                 learnKeyword(tx.note, tx.category, tx.type);
             }
             saveData();
-            // Auto close is handled in form submit now
         };
 
         const deleteCurrentTx = () => {
@@ -468,6 +494,16 @@
                 }
             });
             return balance;
+        };
+
+        // [V9.5 Logic Fix] Centralized Logic to check if a transaction counts towards stats
+        const shouldCountTx = (tx) => {
+            // 1. Excluded manually?
+            if (tx.isExcluded) return false;
+            // 2. Specific System Categories? (Strict match)
+            if (tx.category === '系統調整' || tx.category === '帳戶餘額調整') return false;
+            
+            return true;
         };
 
         const openSplitModal = () => {
@@ -629,8 +665,8 @@
             let incomeMonth = 0, expenseMonth = 0;
             
             state.transactions.filter(tx => tx.date.startsWith(thisMonthPrefix)).forEach(tx => {
-                // [V9.4 Fix] Exclude logic
-                if (tx.category === '系統調整' || tx.category === '帳戶餘額調整' || tx.isExcluded) return;
+                // [V9.5 Logic Fix] Use logic helper
+                if (!shouldCountTx(tx)) return;
 
                 const amt = parseFloat(tx.amount);
                 if (tx.type === 'income' && tx.isVerified !== false) incomeMonth += amt;
@@ -724,8 +760,8 @@
                     const prefix = `${targetYear}-${String(i + 1).padStart(2, '0')}`;
                     let inc = 0, exp = 0;
                     state.transactions.filter(tx => tx.date.startsWith(prefix)).forEach(tx => {
-                        // [V9.4 Fix] Exclude logic
-                        if (tx.category === '系統調整' || tx.category === '帳戶餘額調整' || tx.isExcluded) return;
+                        // [V9.5 Logic Fix] Use logic helper
+                        if (!shouldCountTx(tx)) return;
 
                         const amt = parseFloat(tx.amount);
                         if (tx.type === 'income' && tx.isVerified !== false) inc += amt;
@@ -738,8 +774,8 @@
                 const prefix = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}`;
                 const catMap = {};
                 state.transactions.filter(tx => tx.date.startsWith(prefix) && tx.type === 'expense').forEach(tx => {
-                    // [V9.4 Fix] Exclude logic for pie chart
-                    if (tx.category === '系統調整' || tx.category === '帳戶餘額調整' || tx.isExcluded) return;
+                    // [V9.5 Logic Fix] Use logic helper
+                    if (!shouldCountTx(tx)) return;
 
                     catMap[tx.category] = (catMap[tx.category] || 0) + parseFloat(tx.amount);
                 });
@@ -887,7 +923,7 @@
                 
                 document.getElementById('inp-deferred').checked = tx.isVerified === false;
                 document.getElementById('inp-realization').checked = tx.isRealization === true;
-                document.getElementById('inp-excluded').checked = tx.isExcluded === true; // [V9.4 Fix] Load excluded state
+                document.getElementById('inp-excluded').checked = tx.isExcluded === true; 
                 
                 populateAccountSelects();
                 updateCategoryOptions();
@@ -923,7 +959,7 @@
                 category: document.getElementById('inp-category').value,
                 accountFrom: document.getElementById('inp-account-from').value,
                 note: document.getElementById('inp-note').value,
-                isExcluded: false // Default
+                isExcluded: false 
             };
             
             if (type === 'transfer') {
@@ -932,7 +968,6 @@
                 tx.isRealization = document.getElementById('inp-realization').checked;
             } else {
                 tx.isRealization = false;
-                // [V9.4 Fix] Save excluded state for Income/Expense
                 tx.isExcluded = document.getElementById('inp-excluded').checked;
             }
 
@@ -943,7 +978,6 @@
             }
 
             upsertTransaction(tx);
-            // Fix: Close modal automatically on successful submit
             toggleModal('modal-tx');
         });
 
@@ -965,7 +999,7 @@
             const lblFrom = document.getElementById('lbl-from');
             const revGroup = document.getElementById('option-deferred');
             const realGroup = document.getElementById('option-realization');
-            const exclGroup = document.getElementById('option-exclude'); // [V9.4]
+            const exclGroup = document.getElementById('option-exclude'); 
             
             catSelect.innerHTML = '';
             state.categories[type].forEach(cat => catSelect.add(new Option(cat, cat)));
@@ -979,7 +1013,7 @@
                 toGroup.classList.add('hidden'); lblFrom.innerText = type === 'income' ? '存入帳戶' : '支出帳戶';
                 revGroup.classList.toggle('hidden', type !== 'income');
                 realGroup.classList.add('hidden');
-                exclGroup.classList.remove('hidden'); // Show for Income/Expense
+                exclGroup.classList.remove('hidden'); 
             }
         };
 
@@ -1153,7 +1187,7 @@
 
         document.documentElement.classList.add('dark');
         loadData();
-        // [V9.4 Fix] Always default to Accounts view on refresh
+        // Always default to Accounts view on refresh
         state.ui.currentView = 'view-accounts'; 
         renderApp();
     </script>
