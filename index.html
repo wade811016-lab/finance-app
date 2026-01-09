@@ -147,6 +147,10 @@
 
         .split-row { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Progress Bar for Leaderboard */
+        .progress-bar-bg { background: rgba(255,255,255,0.1); height: 4px; width: 100%; border-radius: 2px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; transition: width 0.5s ease-out; }
     </style>
 </head>
 <body class="flex flex-col">
@@ -269,16 +273,12 @@
                 <h3 class="text-xl font-bold text-sys-purple uppercase"><i class="fa-solid fa-scissors mr-2"></i>消費拆帳</h3>
                 <button onclick="toggleModal('modal-split')" class="text-sys-text hover:text-sys-danger"><i class="fa-solid fa-xmark text-2xl"></i></button>
             </div>
-            
             <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
                 <div class="mb-4 text-center">
                     <p class="text-gray-400 text-xs uppercase tracking-widest mb-1">總金額</p>
                     <div class="text-3xl font-bold text-sys-blue" id="split-display-total">$0</div>
                 </div>
-
-                <div id="split-rows-container" class="space-y-3">
-                </div>
-                
+                <div id="split-rows-container" class="space-y-3"></div>
                 <div id="split-ghost-row" class="hidden mt-3 p-3 border border-dashed border-gray-600 rounded bg-gray-900/50 opacity-70 cursor-pointer hover:opacity-100 hover:border-sys-blue hover:bg-sys-blue/5 transition-all" onclick="addSplitRowFromGhost()">
                     <div class="flex items-center justify-between text-gray-400 pointer-events-none">
                         <span><i class="fa-solid fa-plus-circle mr-2"></i> 點擊自動填入剩餘款項</span>
@@ -286,7 +286,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="p-4 border-t border-sys-blue bg-sys-panel z-10 flex gap-3">
                 <div class="flex-1 text-xs flex flex-col justify-center">
                     <span class="text-gray-400">已分配: <span id="split-display-sum" class="text-sys-text font-bold">$0</span></span>
@@ -390,14 +389,14 @@
                 chartYear: new Date().getFullYear(),
                 chartMonth: 'all',
                 activeAccountDetail: null,
-                catManageType: 'expense'
+                catManageType: 'expense',
+                // V10: Dashboard Breakdown Tab (expense, income, excluded)
+                breakdownTab: 'expense'
             }
         };
 
-        let splitState = {
-            total: 0,
-            rows: [] 
-        };
+        let splitState = { total: 0, rows: [] };
+        let donutChart = null; // Store chart instance
 
         function showSystemToast(message, type = 'success') {
             const container = document.getElementById('system-toast-container');
@@ -412,7 +411,6 @@
 
         const toggleModal = (modalId) => {
             const modal = document.getElementById(modalId);
-            
             if (modalId === 'modal-tx') {
                 if (modal.classList.contains('hidden')) {
                     modal.classList.remove('hidden');
@@ -488,7 +486,6 @@
             return balance;
         };
 
-        // [V9.5 Logic]
         const shouldCountTx = (tx) => {
             if (tx.isExcluded) return false;
             if (tx.category === '系統調整' || tx.category === '帳戶餘額調整') return false;
@@ -518,12 +515,9 @@
         const renderSplitRows = () => {
             const container = document.getElementById('split-rows-container');
             container.innerHTML = '';
-            
             let sum = 0;
-            
             splitState.rows.forEach((row, index) => {
                 sum += parseFloat(row.amount) || 0;
-                
                 const rowEl = document.createElement('div');
                 rowEl.className = 'split-row sys-panel p-3 border-l-4 border-sys-purple';
                 rowEl.innerHTML = `
@@ -542,18 +536,15 @@
                     </div>
                 `;
                 container.appendChild(rowEl);
-                
                 const catSelect = rowEl.querySelector('.split-cat-select');
                 const cats = state.categories[row.type] || [];
                 cats.forEach(c => catSelect.add(new Option(c, c, false, c === row.category)));
             });
-
             const remain = splitState.total - sum;
             document.getElementById('split-display-sum').innerText = formatCurrency(sum);
             const remainEl = document.getElementById('split-display-remain');
             remainEl.innerText = formatCurrency(remain);
             remainEl.className = remain === 0 ? 'text-sys-success font-bold' : 'text-sys-danger font-bold';
-
             const ghost = document.getElementById('split-ghost-row');
             if (remain > 0) {
                 ghost.classList.remove('hidden');
@@ -566,7 +557,6 @@
         const updateSplitRow = (index, field, value) => {
             if (field === 'amount') value = parseFloat(value) || 0;
             splitState.rows[index][field] = value;
-            
             if (field === 'type') {
                  const cats = state.categories[value] || [];
                  splitState.rows[index].category = cats[0] || '';
@@ -578,9 +568,7 @@
             const currentSum = splitState.rows.reduce((s, r) => s + (parseFloat(r.amount)||0), 0);
             const remain = splitState.total - currentSum;
             if (remain <= 0) return;
-
             const baseRow = splitState.rows[splitState.rows.length - 1];
-            
             splitState.rows.push({
                 id: Date.now(),
                 type: baseRow.type,
@@ -601,10 +589,8 @@
             if (Math.abs(sum - splitState.total) > 1) { 
                 if (!confirm(`目前分配總額 (${sum}) 與總金額 (${splitState.total}) 不符。確定要儲存嗎？`)) return;
             }
-
             const date = document.getElementById('inp-date').value;
             const accountFrom = document.getElementById('inp-account-from').value;
-            
             let savedCount = 0;
             splitState.rows.forEach(row => {
                 const tx = {
@@ -622,7 +608,6 @@
                 upsertTransaction(tx);
                 savedCount++;
             });
-
             showSystemToast(`成功拆分為 ${savedCount} 筆紀錄`);
             toggleModal('modal-split');
             toggleModal('modal-tx'); 
@@ -639,7 +624,6 @@
             document.getElementById(state.ui.currentView.replace('view', 'nav')).classList.add('active');
             const mainContent = document.getElementById('main-content');
             mainContent.innerHTML = '';
-            
             switch(state.ui.currentView) {
                 case 'view-dashboard': renderDashboard(mainContent); break;
                 case 'view-records': renderRecords(mainContent); break;
@@ -648,6 +632,7 @@
             }
         };
 
+        // --- DASHBOARD RENDERER (Updated V10) ---
         const renderDashboard = (container) => {
             const now = new Date();
             const thisMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -655,7 +640,6 @@
             
             state.transactions.filter(tx => tx.date.startsWith(thisMonthPrefix)).forEach(tx => {
                 if (!shouldCountTx(tx)) return;
-
                 const amt = parseFloat(tx.amount);
                 if (tx.type === 'income' && tx.isVerified !== false) incomeMonth += amt;
                 if (tx.type === 'transfer' && tx.isRealization === true) incomeMonth += amt;
@@ -666,6 +650,10 @@
             const yearOptions = getAvailableYears().map(y => `<option value="${y}" ${y === state.ui.chartYear ? 'selected' : ''}>${y} 年</option>`).join('');
             const monthOptions = `<option value="all" ${state.ui.chartMonth === 'all' ? 'selected' : ''}>全年</option>` + 
                                  Array.from({length: 12}, (_, i) => `<option value="${i}" ${state.ui.chartMonth == i ? 'selected' : ''}>${i+1} 月</option>`).join('');
+
+            // [V10] Tabs UI for Breakdown
+            const activeTab = state.ui.breakdownTab || 'expense';
+            const tabClass = (t) => t === activeTab ? 'text-sys-blue border-b-2 border-sys-blue font-bold' : 'text-gray-500';
 
             container.innerHTML = `
                 <div class="grid grid-cols-2 gap-4 mb-6">
@@ -684,41 +672,154 @@
                         </div>
                     </div>
                 </div>
-                <div class="sys-panel p-4 relative z-10">
+                
+                <div class="sys-panel p-4 relative z-10 mb-6">
                     <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
-                        <h3 class="text-sys-blue uppercase font-bold tracking-widest"><i class="fa-solid fa-chart-pie mr-2"></i>收支趨勢分析</h3>
+                        <h3 class="text-sys-blue uppercase font-bold tracking-widest"><i class="fa-solid fa-chart-line mr-2"></i>收支趨勢</h3>
                         <div class="flex space-x-2">
                             <select onchange="updateChartFilter('year', this.value)" class="sys-btn dashboard-select bg-sys-bg text-sys-text border-sys-blue">${yearOptions}</select>
                             <select onchange="updateChartFilter('month', this.value)" class="sys-btn dashboard-select bg-sys-bg text-sys-text border-sys-blue">${monthOptions}</select>
                         </div>
                     </div>
                     <div class="h-64"><canvas id="mainChart"></canvas></div>
+                </div>
+
+                <div class="sys-panel p-4 relative z-10 mb-6">
+                    <h3 class="text-sys-blue uppercase font-bold tracking-widest mb-4"><i class="fa-solid fa-chart-pie mr-2"></i>分類結構分析</h3>
                     
-                    <div class="mt-6 border-t border-sys-blue/20 pt-4">
-                        <h4 class="text-sm font-bold text-gray-400 mb-3 uppercase">該區間帳務明細</h4>
-                        <div id="dashboard-tx-list" class="space-y-3">
+                    <div class="flex mb-4 border-b border-sys-blue/30">
+                        <button onclick="updateBreakdownTab('expense')" class="flex-1 py-2 text-sm ${tabClass('expense')}">支出</button>
+                        <button onclick="updateBreakdownTab('income')" class="flex-1 py-2 text-sm ${tabClass('income')}">收入</button>
+                        <button onclick="updateBreakdownTab('excluded')" class="flex-1 py-2 text-sm ${tabClass('excluded')} text-sys-warn"><i class="fa-solid fa-eye-slash mr-1"></i>追蹤項</button>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row gap-6">
+                        <div class="h-48 w-full md:w-1/2 flex justify-center">
+                            <canvas id="donutChart"></canvas>
                         </div>
+                        <div class="w-full md:w-1/2 space-y-3" id="breakdown-list">
+                            </div>
                     </div>
                 </div>
+
+                <div class="sys-panel p-4 border-t border-sys-blue/20">
+                    <h4 class="text-sm font-bold text-gray-400 mb-3 uppercase">該區間帳務明細</h4>
+                    <div id="dashboard-tx-list" class="space-y-3"></div>
+                </div>
             `;
+            
             renderChart();
             renderDashboardList(); 
+            renderBreakdown(); // V10 Function
+        };
+
+        const updateBreakdownTab = (tab) => {
+            state.ui.breakdownTab = tab;
+            renderApp(); // Re-render to update classes and chart
+        };
+
+        // [V10] Render Donut + Leaderboard
+        const renderBreakdown = () => {
+            const ctx = document.getElementById('donutChart').getContext('2d');
+            const listContainer = document.getElementById('breakdown-list');
+            const type = state.ui.breakdownTab; // expense, income, excluded
+            const targetYear = state.ui.chartYear;
+            const targetMonth = state.ui.chartMonth;
+
+            // 1. Filter Data
+            const txs = state.transactions.filter(tx => {
+                const date = new Date(tx.date);
+                const matchYear = date.getFullYear() === targetYear;
+                const matchMonth = targetMonth === 'all' ? true : date.getMonth() === parseInt(targetMonth);
+                if (!matchYear || !matchMonth) return false;
+
+                if (type === 'excluded') {
+                    // Logic for Excluded tab: Must be marked excluded OR excluded category
+                    return tx.isExcluded || tx.category === '系統調整' || tx.category === '帳戶餘額調整';
+                } else {
+                    // Logic for Income/Expense: Must match type AND NOT be excluded
+                    return tx.type === type && shouldCountTx(tx); 
+                }
+            });
+
+            // 2. Group By Category
+            const groups = {};
+            let totalSum = 0;
+            txs.forEach(tx => {
+                const cat = tx.category || '未分類';
+                const amt = parseFloat(tx.amount);
+                groups[cat] = (groups[cat] || 0) + amt;
+                totalSum += amt;
+            });
+
+            // 3. Sort
+            const sorted = Object.entries(groups).sort((a, b) => b[1] - a[1]);
+
+            // 4. Render List
+            if (sorted.length === 0) {
+                listContainer.innerHTML = '<div class="text-center text-gray-500 text-sm py-8">此區間無資料</div>';
+                if (donutChart) donutChart.destroy();
+                return;
+            }
+
+            listContainer.innerHTML = sorted.map(([cat, amt]) => {
+                const pct = ((amt / totalSum) * 100).toFixed(1);
+                return `
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="font-bold">${cat}</span>
+                            <span class="font-mono text-gray-400">${pct}% <span class="text-sys-text ml-2">${formatCurrency(amt)}</span></span>
+                        </div>
+                        <div class="w-full bg-sys-bg h-2 rounded-full overflow-hidden">
+                            <div class="h-full bg-sys-blue" style="width: ${pct}%"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // 5. Render Donut Chart
+            if (donutChart) donutChart.destroy();
+            
+            const chartColors = ['#00e1ff', '#9d00ff', '#ff3333', '#33ff57', '#ffbb00', '#3b82f6', '#ec4899', '#6366f1'];
+            
+            donutChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: sorted.map(i => i[0]),
+                    datasets: [{
+                        data: sorted.map(i => i[1]),
+                        backgroundColor: chartColors,
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }, // Hide legend to save space on mobile
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => ` ${ctx.label}: ${formatCurrency(ctx.raw)}`
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
         };
 
         const renderDashboardList = () => {
             const container = document.getElementById('dashboard-tx-list');
             if(!container) return;
-
             const targetYear = state.ui.chartYear;
             const targetMonth = state.ui.chartMonth;
-            
             const filtered = state.transactions.filter(tx => {
                 const date = new Date(tx.date);
                 const matchYear = date.getFullYear() === targetYear;
                 const matchMonth = targetMonth === 'all' ? true : date.getMonth() === parseInt(targetMonth);
                 return matchYear && matchMonth;
             });
-
             if (filtered.length === 0) {
                 container.innerHTML = '<div class="text-center text-gray-500 text-sm py-4">無資料</div>';
             } else {
@@ -749,7 +850,6 @@
                     let inc = 0, exp = 0;
                     state.transactions.filter(tx => tx.date.startsWith(prefix)).forEach(tx => {
                         if (!shouldCountTx(tx)) return;
-
                         const amt = parseFloat(tx.amount);
                         if (tx.type === 'income' && tx.isVerified !== false) inc += amt;
                         if (tx.type === 'transfer' && tx.isRealization === true) inc += amt;
@@ -762,12 +862,12 @@
                 const catMap = {};
                 state.transactions.filter(tx => tx.date.startsWith(prefix) && tx.type === 'expense').forEach(tx => {
                     if (!shouldCountTx(tx)) return;
-
                     catMap[tx.category] = (catMap[tx.category] || 0) + parseFloat(tx.amount);
                 });
                 const sorted = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
                 labels = sorted.map(i => i[0]); expenseData = sorted.map(i => i[1]);
             }
+            // Reuse chart instance if possible (simplified here)
             new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -810,7 +910,6 @@
         const renderAccountDetail = (container, acc) => {
             const bal = getBalance(acc);
             const accountTx = state.transactions.filter(tx => tx.accountFrom === acc || tx.accountTo === acc);
-            // [V9.6 Fix] Clean Header
             container.innerHTML = `
                 <button onclick="state.ui.activeAccountDetail = null; renderApp()" class="mb-4 text-sys-blue hover:underline flex items-center uppercase font-bold"><i class="fa-solid fa-chevron-left mr-2"></i> 返回帳戶總覽</button>
                 <div class="sys-panel p-6 mb-6 border-l-4 border-sys-blue flex justify-between items-center">
@@ -869,9 +968,6 @@
         };
 
         const renderSettings = (container) => {
-            // [V9.6] Enhanced Settings with Sorting
-            
-            // 1. Account List with Sorting
             const accListHtml = state.accounts.map((acc, i) => `
                 <div class="flex justify-between items-center p-3 bg-sys-blue/5 border border-sys-blue/20">
                     <span class="font-bold text-sm">${acc}</span>
@@ -919,7 +1015,6 @@
             `;
         };
 
-        // [V9.6] Settings Logic for Accounts
         const addAccountSettings = () => {
             const val = document.getElementById('new-account-name-settings').value.trim();
             if(val && !state.accounts.includes(val)) {
@@ -942,222 +1037,6 @@
             saveData();
         };
 
-        const openTransactionModal = (id = null) => {
-            document.getElementById('form-tx').reset();
-            const dateInput = document.getElementById('inp-date');
-            const typeSelect = document.getElementById('inp-type');
-            
-            if (id) {
-                const tx = state.transactions.find(t => t.id === id);
-                if (!tx) return;
-                document.getElementById('modal-tx-title').innerHTML = '<i class="fa-solid fa-pen mr-2"></i>編輯紀錄';
-                document.getElementById('inp-id').value = tx.id;
-                dateInput.value = tx.date;
-                typeSelect.value = tx.type;
-                document.getElementById('inp-amount').value = tx.amount;
-                document.getElementById('inp-note').value = tx.note || '';
-                
-                document.getElementById('inp-deferred').checked = tx.isVerified === false;
-                document.getElementById('inp-realization').checked = tx.isRealization === true;
-                document.getElementById('inp-excluded').checked = tx.isExcluded === true; 
-                
-                populateAccountSelects();
-                updateCategoryOptions();
-                
-                document.getElementById('inp-account-from').value = tx.accountFrom;
-                document.getElementById('inp-category').value = tx.category;
-                if(tx.accountTo) document.getElementById('inp-account-to').value = tx.accountTo;
-                
-                document.getElementById('btn-delete-tx').classList.remove('hidden');
-            } else {
-                document.getElementById('modal-tx-title').innerHTML = '<i class="fa-solid fa-plus mr-2"></i>新增紀錄';
-                document.getElementById('inp-id').value = '';
-                dateInput.valueAsDate = new Date();
-                typeSelect.value = 'expense';
-                document.getElementById('inp-deferred').checked = false;
-                document.getElementById('inp-realization').checked = false;
-                document.getElementById('inp-excluded').checked = false;
-                populateAccountSelects();
-                updateCategoryOptions();
-                document.getElementById('btn-delete-tx').classList.add('hidden');
-            }
-            toggleModal('modal-tx');
-        };
-
-        document.getElementById('form-tx').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const type = document.getElementById('inp-type').value;
-            const tx = {
-                id: document.getElementById('inp-id').value || Date.now().toString(),
-                date: document.getElementById('inp-date').value,
-                type: type,
-                amount: parseFloat(document.getElementById('inp-amount').value),
-                category: document.getElementById('inp-category').value,
-                accountFrom: document.getElementById('inp-account-from').value,
-                note: document.getElementById('inp-note').value,
-                isExcluded: false 
-            };
-            
-            if (type === 'transfer') {
-                tx.accountTo = document.getElementById('inp-account-to').value;
-                if (tx.accountFrom === tx.accountTo) return showSystemToast('轉出轉入帳戶不可相同', 'error');
-                tx.isRealization = document.getElementById('inp-realization').checked;
-            } else {
-                tx.isRealization = false;
-                tx.isExcluded = document.getElementById('inp-excluded').checked;
-            }
-
-            if (type === 'income') {
-                tx.isVerified = !document.getElementById('inp-deferred').checked;
-            } else {
-                tx.isVerified = true;
-            }
-
-            upsertTransaction(tx);
-            toggleModal('modal-tx');
-        });
-
-        const populateAccountSelects = () => {
-            const from = document.getElementById('inp-account-from');
-            const to = document.getElementById('inp-account-to');
-            from.innerHTML = ''; to.innerHTML = '';
-            state.accounts.forEach(acc => {
-                from.add(new Option(acc, acc));
-                to.add(new Option(acc, acc));
-            });
-            if (state.accounts.length > 1) to.selectedIndex = 1;
-        };
-
-        const updateCategoryOptions = () => {
-            const type = document.getElementById('inp-type').value;
-            const catSelect = document.getElementById('inp-category');
-            const toGroup = document.getElementById('group-account-to');
-            const lblFrom = document.getElementById('lbl-from');
-            const revGroup = document.getElementById('option-deferred');
-            const realGroup = document.getElementById('option-realization');
-            const exclGroup = document.getElementById('option-exclude'); 
-            
-            catSelect.innerHTML = '';
-            state.categories[type].forEach(cat => catSelect.add(new Option(cat, cat)));
-
-            if (type === 'transfer') {
-                toGroup.classList.remove('hidden'); lblFrom.innerText = '轉出帳戶';
-                revGroup.classList.add('hidden');
-                realGroup.classList.remove('hidden');
-                exclGroup.classList.add('hidden');
-            } else {
-                toGroup.classList.add('hidden'); lblFrom.innerText = type === 'income' ? '存入帳戶' : '支出帳戶';
-                revGroup.classList.toggle('hidden', type !== 'income');
-                realGroup.classList.add('hidden');
-                exclGroup.classList.remove('hidden'); 
-            }
-        };
-
-        const openAccountModal = (accName = null) => {
-            document.getElementById('inp-acc-original-name').value = accName || '';
-            const nameInp = document.getElementById('inp-acc-name');
-            const balInp = document.getElementById('inp-acc-balance');
-            
-            if (accName) {
-                document.getElementById('modal-account-title').innerText = '編輯帳戶';
-                nameInp.value = accName;
-                balInp.value = getBalance(accName);
-            } else {
-                document.getElementById('modal-account-title').innerText = '新增帳戶';
-                nameInp.value = '';
-                balInp.value = '';
-            }
-            toggleModal('modal-account');
-        };
-
-        const saveAccount = () => {
-            const originalName = document.getElementById('inp-acc-original-name').value;
-            const newName = document.getElementById('inp-acc-name').value.trim();
-            const newBal = parseFloat(document.getElementById('inp-acc-balance').value);
-            
-            if (!newName) return showSystemToast("請輸入帳戶名稱", 'error');
-
-            if (originalName) {
-                if (originalName !== newName) {
-                    if (state.accounts.includes(newName)) return showSystemToast("帳戶名稱已存在", 'error');
-                    state.accounts = state.accounts.map(a => a === originalName ? newName : a);
-                    state.transactions.forEach(tx => {
-                        if (tx.accountFrom === originalName) tx.accountFrom = newName;
-                        if (tx.accountTo === originalName) tx.accountTo = newName;
-                    });
-                }
-                const currentBal = getBalance(newName);
-                const diff = newBal - currentBal;
-                if (diff !== 0 && !isNaN(newBal)) {
-                    upsertTransaction({
-                        id: Date.now().toString(),
-                        date: new Date().toISOString().split('T')[0],
-                        type: diff > 0 ? 'income' : 'expense',
-                        amount: Math.abs(diff),
-                        category: '系統調整',
-                        accountFrom: newName,
-                        note: '帳戶餘額修正',
-                        isVerified: true
-                    });
-                }
-                showSystemToast("帳戶更新成功");
-            } else {
-                if (state.accounts.includes(newName)) return showSystemToast("帳戶名稱已存在", 'error');
-                state.accounts.push(newName);
-                if (!isNaN(newBal) && newBal !== 0) {
-                     upsertTransaction({
-                        id: Date.now().toString(),
-                        date: new Date().toISOString().split('T')[0],
-                        type: newBal > 0 ? 'income' : 'expense',
-                        amount: Math.abs(newBal),
-                        category: '系統調整',
-                        accountFrom: newName,
-                        note: '初始餘額',
-                        isVerified: true
-                    });
-                }
-                showSystemToast("帳戶已新增");
-            }
-            saveAccountFinish();
-        };
-        const saveAccountFinish = () => {
-            saveData();
-            toggleModal('modal-account');
-            if(state.ui.currentView === 'view-accounts' && state.ui.activeAccountDetail) {
-               state.ui.activeAccountDetail = document.getElementById('inp-acc-name').value; 
-            }
-            renderApp();
-        };
-
-        const openCatsModal = () => { toggleModal('modal-cats'); renderCatList(); };
-        const switchCatType = (type) => { state.ui.catManageType = type; renderCatList(); };
-        const renderCatList = () => {
-            const type = state.ui.catManageType;
-            const tabExp = document.getElementById('tab-cat-expense');
-            const tabInc = document.getElementById('tab-cat-income');
-            if (type === 'expense') {
-                tabExp.className = "flex-1 py-2 text-sm text-sys-blue border-b-2 border-sys-blue font-bold";
-                tabInc.className = "flex-1 py-2 text-sm text-gray-500";
-            } else {
-                tabInc.className = "flex-1 py-2 text-sm text-sys-blue border-b-2 border-sys-blue font-bold";
-                tabExp.className = "flex-1 py-2 text-sm text-gray-500";
-            }
-            
-            // [V9.6] Updated List with Sorting Controls
-            const list = state.categories[type].map((c, i) => `
-                <div class="flex justify-between items-center p-3 bg-sys-blue/5 border border-sys-blue/20">
-                    <span class="text-sm">${c}</span>
-                    <div class="flex items-center gap-2">
-                        <button onclick="moveCategory(${i}, -1)" class="text-gray-500 hover:text-sys-blue ${i===0?'opacity-30 pointer-events-none':''}"><i class="fa-solid fa-arrow-up"></i></button>
-                        <button onclick="moveCategory(${i}, 1)" class="text-gray-500 hover:text-sys-blue ${i===state.categories[type].length-1?'opacity-30 pointer-events-none':''}"><i class="fa-solid fa-arrow-down"></i></button>
-                        <button onclick="deleteCategory('${type}', '${c}')" class="text-gray-500 hover:text-sys-danger ml-2"><i class="fa-solid fa-xmark"></i></button>
-                    </div>
-                </div>
-            `).join('');
-            document.getElementById('cat-list-container').innerHTML = list;
-        };
-        
-        // [V9.6] Category Logic
         const addCategory = () => {
             const val = document.getElementById('new-cat-name').value.trim();
             const type = state.ui.catManageType;
