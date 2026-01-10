@@ -137,20 +137,27 @@
         
         #main-content { padding-bottom: 160px !important; }
         
+        /* [V9.7 Fix] Improved Modal Constraint for Mobile */
         .modal-constraint {
-            max-height: 90dvh; 
+            max-height: 85vh; /* Safer height for mobile browsers */
             display: flex;
             flex-direction: column;
+            overflow: hidden; /* Prevent double scrollbars */
         }
-        .modal-header { flex: none; }
-        .modal-body { flex: 1; overflow-y: auto; min-height: 0; }
+        .modal-header {
+            flex-shrink: 0; /* Header never shrinks */
+            background-color: theme('colors.sys.bg');
+            z-index: 10;
+        }
+        .modal-body {
+            flex-grow: 1;
+            overflow-y: auto; /* Internal scroll */
+            min-height: 0;
+            overscroll-behavior: contain; /* Prevent scrolling parent page */
+        }
 
         .split-row { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Progress Bar for Leaderboard */
-        .progress-bar-bg { background: rgba(255,255,255,0.1); height: 4px; width: 100%; border-radius: 2px; overflow: hidden; }
-        .progress-bar-fill { height: 100%; transition: width 0.5s ease-out; }
     </style>
 </head>
 <body class="flex flex-col">
@@ -266,14 +273,14 @@
         </div>
     </div>
 
-    <div id="modal-split" class="fixed inset-0 z-[60] hidden">
+    <div id="modal-split" class="fixed inset-0 z-[60] hidden justify-center items-end sm:items-center">
         <div class="absolute inset-0 bg-black/95 backdrop-blur-sm" onclick="toggleModal('modal-split')"></div>
-        <div class="absolute inset-0 flex flex-col bg-sys-bg">
-            <div class="p-4 border-b border-sys-blue flex justify-between items-center bg-sys-panel z-10">
+        <div class="relative w-full sm:w-auto sm:max-w-lg bg-sys-bg rounded-t-2xl sm:rounded-2xl modal-constraint">
+            <div class="p-4 border-b border-sys-blue flex justify-between items-center bg-sys-panel modal-header">
                 <h3 class="text-xl font-bold text-sys-purple uppercase"><i class="fa-solid fa-scissors mr-2"></i>消費拆帳</h3>
                 <button onclick="toggleModal('modal-split')" class="text-sys-text hover:text-sys-danger"><i class="fa-solid fa-xmark text-2xl"></i></button>
             </div>
-            <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+            <div class="p-4 modal-body custom-scrollbar">
                 <div class="mb-4 text-center">
                     <p class="text-gray-400 text-xs uppercase tracking-widest mb-1">總金額</p>
                     <div class="text-3xl font-bold text-sys-blue" id="split-display-total">$0</div>
@@ -286,7 +293,7 @@
                     </div>
                 </div>
             </div>
-            <div class="p-4 border-t border-sys-blue bg-sys-panel z-10 flex gap-3">
+            <div class="p-4 border-t border-sys-blue bg-sys-panel modal-header flex gap-3">
                 <div class="flex-1 text-xs flex flex-col justify-center">
                     <span class="text-gray-400">已分配: <span id="split-display-sum" class="text-sys-text font-bold">$0</span></span>
                     <span class="text-gray-400">剩餘: <span id="split-display-remain" class="text-sys-danger font-bold">$0</span></span>
@@ -390,13 +397,15 @@
                 chartMonth: 'all',
                 activeAccountDetail: null,
                 catManageType: 'expense',
-                // V10: Dashboard Breakdown Tab (expense, income, excluded)
                 breakdownTab: 'expense'
             }
         };
 
-        let splitState = { total: 0, rows: [] };
-        let donutChart = null; // Store chart instance
+        let splitState = {
+            total: 0,
+            rows: [] 
+        };
+        let donutChart = null; 
 
         function showSystemToast(message, type = 'success') {
             const container = document.getElementById('system-toast-container');
@@ -411,7 +420,7 @@
 
         const toggleModal = (modalId) => {
             const modal = document.getElementById(modalId);
-            if (modalId === 'modal-tx') {
+            if (modalId === 'modal-tx' || modalId === 'modal-split') {
                 if (modal.classList.contains('hidden')) {
                     modal.classList.remove('hidden');
                     modal.classList.add('flex');
@@ -632,7 +641,6 @@
             }
         };
 
-        // --- DASHBOARD RENDERER (Updated V10) ---
         const renderDashboard = (container) => {
             const now = new Date();
             const thisMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
@@ -651,7 +659,6 @@
             const monthOptions = `<option value="all" ${state.ui.chartMonth === 'all' ? 'selected' : ''}>全年</option>` + 
                                  Array.from({length: 12}, (_, i) => `<option value="${i}" ${state.ui.chartMonth == i ? 'selected' : ''}>${i+1} 月</option>`).join('');
 
-            // [V10] Tabs UI for Breakdown
             const activeTab = state.ui.breakdownTab || 'expense';
             const tabClass = (t) => t === activeTab ? 'text-sys-blue border-b-2 border-sys-blue font-bold' : 'text-gray-500';
 
@@ -686,19 +693,17 @@
 
                 <div class="sys-panel p-4 relative z-10 mb-6">
                     <h3 class="text-sys-blue uppercase font-bold tracking-widest mb-4"><i class="fa-solid fa-chart-pie mr-2"></i>分類結構分析</h3>
-                    
                     <div class="flex mb-4 border-b border-sys-blue/30">
                         <button onclick="updateBreakdownTab('expense')" class="flex-1 py-2 text-sm ${tabClass('expense')}">支出</button>
                         <button onclick="updateBreakdownTab('income')" class="flex-1 py-2 text-sm ${tabClass('income')}">收入</button>
                         <button onclick="updateBreakdownTab('excluded')" class="flex-1 py-2 text-sm ${tabClass('excluded')} text-sys-warn"><i class="fa-solid fa-eye-slash mr-1"></i>追蹤項</button>
                     </div>
-
                     <div class="flex flex-col md:flex-row gap-6">
                         <div class="h-48 w-full md:w-1/2 flex justify-center">
                             <canvas id="donutChart"></canvas>
                         </div>
                         <div class="w-full md:w-1/2 space-y-3" id="breakdown-list">
-                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -710,23 +715,21 @@
             
             renderChart();
             renderDashboardList(); 
-            renderBreakdown(); // V10 Function
+            renderBreakdown(); 
         };
 
         const updateBreakdownTab = (tab) => {
             state.ui.breakdownTab = tab;
-            renderApp(); // Re-render to update classes and chart
+            renderApp();
         };
 
-        // [V10] Render Donut + Leaderboard
         const renderBreakdown = () => {
             const ctx = document.getElementById('donutChart').getContext('2d');
             const listContainer = document.getElementById('breakdown-list');
-            const type = state.ui.breakdownTab; // expense, income, excluded
+            const type = state.ui.breakdownTab; 
             const targetYear = state.ui.chartYear;
             const targetMonth = state.ui.chartMonth;
 
-            // 1. Filter Data
             const txs = state.transactions.filter(tx => {
                 const date = new Date(tx.date);
                 const matchYear = date.getFullYear() === targetYear;
@@ -734,15 +737,12 @@
                 if (!matchYear || !matchMonth) return false;
 
                 if (type === 'excluded') {
-                    // Logic for Excluded tab: Must be marked excluded OR excluded category
                     return tx.isExcluded || tx.category === '系統調整' || tx.category === '帳戶餘額調整';
                 } else {
-                    // Logic for Income/Expense: Must match type AND NOT be excluded
                     return tx.type === type && shouldCountTx(tx); 
                 }
             });
 
-            // 2. Group By Category
             const groups = {};
             let totalSum = 0;
             txs.forEach(tx => {
@@ -752,10 +752,8 @@
                 totalSum += amt;
             });
 
-            // 3. Sort
             const sorted = Object.entries(groups).sort((a, b) => b[1] - a[1]);
 
-            // 4. Render List
             if (sorted.length === 0) {
                 listContainer.innerHTML = '<div class="text-center text-gray-500 text-sm py-8">此區間無資料</div>';
                 if (donutChart) donutChart.destroy();
@@ -777,11 +775,8 @@
                 `;
             }).join('');
 
-            // 5. Render Donut Chart
             if (donutChart) donutChart.destroy();
-            
             const chartColors = ['#00e1ff', '#9d00ff', '#ff3333', '#33ff57', '#ffbb00', '#3b82f6', '#ec4899', '#6366f1'];
-            
             donutChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
@@ -797,12 +792,8 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false }, // Hide legend to save space on mobile
-                        tooltip: {
-                            callbacks: {
-                                label: (ctx) => ` ${ctx.label}: ${formatCurrency(ctx.raw)}`
-                            }
-                        }
+                        legend: { display: false }, 
+                        tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${formatCurrency(ctx.raw)}` } }
                     },
                     cutout: '65%'
                 }
@@ -867,7 +858,6 @@
                 const sorted = Object.entries(catMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
                 labels = sorted.map(i => i[0]); expenseData = sorted.map(i => i[1]);
             }
-            // Reuse chart instance if possible (simplified here)
             new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -981,7 +971,6 @@
 
             container.innerHTML = `
                 <h2 class="text-xl font-bold text-sys-blue uppercase mb-6 tracking-widest">系統設定 & 工具</h2>
-                
                 <div class="sys-panel p-6 mb-6">
                     <h3 class="text-lg font-bold text-sys-blue uppercase mb-4"><i class="fa-solid fa-wallet mr-2"></i>帳戶管理</h3>
                     <div class="flex gap-2 mb-4">
@@ -992,7 +981,6 @@
                         ${accListHtml}
                     </div>
                 </div>
-
                 <div class="grid grid-cols-1 gap-4">
                     <div onclick="openCatsModal()" class="sys-panel p-6 flex justify-between items-center cursor-pointer hover:border-sys-blue transition-all group">
                         <div><h3 class="text-lg font-bold text-sys-blue uppercase"><i class="fa-solid fa-tags mr-2"></i>分類架構管理</h3><p class="text-xs text-gray-400">新增、移除或排序分類</p></div>
@@ -1117,10 +1105,12 @@
         };
         const resetData = () => { if(prompt('輸入RESET重置')==='RESET') { localStorage.removeItem(APP_ID); location.reload(); } };
 
-        document.documentElement.classList.add('dark');
-        loadData();
-        state.ui.currentView = 'view-accounts'; 
-        renderApp();
+        document.addEventListener('DOMContentLoaded', () => {
+            document.documentElement.classList.add('dark');
+            loadData();
+            state.ui.currentView = 'view-accounts'; 
+            renderApp();
+        });
     </script>
 </body>
 </html>
