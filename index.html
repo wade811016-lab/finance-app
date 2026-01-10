@@ -65,6 +65,7 @@
             background: linear-gradient(90deg, transparent, theme('colors.sys.blue'), transparent);
         }
 
+        /* Form Elements */
         input:not([type="checkbox"]), select, textarea {
             background-color: #1a1a2e !important;
             border: 1px solid theme('colors.sys.blue') !important;
@@ -137,6 +138,7 @@
         
         #main-content { padding-bottom: 160px !important; }
         
+        /* Mobile Modal Fix */
         .modal-constraint {
             max-height: 85vh; 
             display: flex;
@@ -158,7 +160,7 @@
         .split-row { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* [V9.9] Ensure buttons are always clickable */
+        /* Interactive Elements Fix */
         button, .sys-btn, .nav-item { cursor: pointer; pointer-events: auto; }
     </style>
 </head>
@@ -404,10 +406,10 @@
         };
 
         let splitState = { total: 0, rows: [] };
-        let mainChart = null; // [V9.9 Fix] Global chart variable
+        let mainChart = null; 
         let donutChart = null; 
 
-        // Global functions for inline HTML calls
+        // Core Functions (Hoisted)
         function showSystemToast(message, type = 'success') {
             const container = document.getElementById('system-toast-container');
             const toast = document.createElement('div');
@@ -915,7 +917,7 @@
             state.accounts.forEach(acc => {
                 const bal = getBalance(acc);
                 html += `
-                    <div class="sys-panel p-5 flex justify-between items-center cursor-pointer hover:shadow-neon-blue transition-all" onclick="window.openAccountDetail('${acc}')">
+                    <div class="sys-panel p-5 flex justify-between items-center cursor-pointer hover:shadow-neon-blue transition-all" onclick="openAccountDetail('${acc}')">
                         <div class="flex items-center">
                             <div class="w-10 h-10 bg-sys-blue/20 flex items-center justify-center border border-sys-blue mr-4"><i class="fa-solid fa-credit-card text-sys-blue"></i></div>
                             <span class="font-bold text-lg uppercase">${acc}</span>
@@ -923,7 +925,7 @@
                         <span class="font-bold text-xl ${bal >= 0 ? 'text-sys-blue' : 'text-sys-danger'}">${formatCurrency(bal)}</span>
                     </div>`;
             });
-            html += `<button onclick="window.openAccountModal()" class="sys-panel p-5 flex items-center justify-center border-dashed border-sys-blue/50 text-sys-blue/70 hover:text-sys-blue hover:border-sys-blue transition-all uppercase font-bold tracking-widest"><i class="fa-solid fa-plus-circle mr-2"></i> 擴充帳戶槽位</button></div>`;
+            html += `<button onclick="openAccountModal()" class="sys-panel p-5 flex items-center justify-center border-dashed border-sys-blue/50 text-sys-blue/70 hover:text-sys-blue hover:border-sys-blue transition-all uppercase font-bold tracking-widest"><i class="fa-solid fa-plus-circle mr-2"></i> 擴充帳戶槽位</button></div>`;
             container.innerHTML = html;
         }
 
@@ -933,13 +935,13 @@
             const bal = getBalance(acc);
             const accountTx = state.transactions.filter(tx => tx.accountFrom === acc || tx.accountTo === acc);
             container.innerHTML = `
-                <button onclick="state.ui.activeAccountDetail = null; window.renderApp()" class="mb-4 text-sys-blue hover:underline flex items-center uppercase font-bold"><i class="fa-solid fa-chevron-left mr-2"></i> 返回帳戶總覽</button>
+                <button onclick="state.ui.activeAccountDetail = null; renderApp()" class="mb-4 text-sys-blue hover:underline flex items-center uppercase font-bold"><i class="fa-solid fa-chevron-left mr-2"></i> 返回帳戶總覽</button>
                 <div class="sys-panel p-6 mb-6 border-l-4 border-sys-blue flex justify-between items-center">
                     <div>
                         <h2 class="text-xl font-bold uppercase text-sys-blue mb-2">${acc}</h2>
                         <p class="text-3xl font-bold ${bal >= 0 ? 'text-sys-blue' : 'text-sys-danger'}">${formatCurrency(bal)}</p>
                     </div>
-                    <button onclick="window.openAccountModal('${acc}')" class="sys-btn text-xs"><i class="fa-solid fa-pen mr-2"></i>編輯帳戶</button>
+                    <button onclick="openAccountModal('${acc}')" class="sys-btn text-xs"><i class="fa-solid fa-pen mr-2"></i>編輯帳戶</button>
                 </div>
                 <h3 class="text-sys-blue uppercase font-bold mb-4 tracking-widest"><i class="fa-solid fa-list-ul mr-2"></i>交易流水紀錄</h3>
                 <div class="space-y-3">
@@ -969,7 +971,7 @@
             if (isExcluded) { color = 'text-gray-500'; icon = 'fa-ban'; }
 
             return `
-                <div class="sys-panel p-4 flex justify-between items-center relative overflow-hidden group cursor-pointer hover:bg-sys-blue/5 transition-colors" onclick="window.openTransactionModal('${tx.id}')">
+                <div class="sys-panel p-4 flex justify-between items-center relative overflow-hidden group cursor-pointer hover:bg-sys-blue/5 transition-colors" onclick="openTransactionModal('${tx.id}')">
                     <div class="flex items-center gap-3 z-10">
                         <div class="w-10 h-10 flex items-center justify-center border border-sys-blue/50 bg-sys-blue/10 ${color}"><i class="fa-solid ${icon}"></i></div>
                         <div>
@@ -994,9 +996,9 @@
                 <div class="flex justify-between items-center p-3 bg-sys-blue/5 border border-sys-blue/20">
                     <span class="font-bold text-sm">${acc}</span>
                     <div class="flex items-center gap-2">
-                        <button onclick="window.moveAccount(${i}, -1)" class="text-gray-500 hover:text-sys-blue ${i===0?'opacity-30 pointer-events-none':''}"><i class="fa-solid fa-arrow-up"></i></button>
-                        <button onclick="window.moveAccount(${i}, 1)" class="text-gray-500 hover:text-sys-blue ${i===state.accounts.length-1?'opacity-30 pointer-events-none':''}"><i class="fa-solid fa-arrow-down"></i></button>
-                        <button onclick="window.deleteMeta('account', '${acc}')" class="text-gray-500 hover:text-sys-danger ml-2"><i class="fa-solid fa-xmark"></i></button>
+                        <button onclick="moveAccount(${i}, -1)" class="text-gray-500 hover:text-sys-blue ${i===0?'opacity-30 pointer-events-none':''}"><i class="fa-solid fa-arrow-up"></i></button>
+                        <button onclick="moveAccount(${i}, 1)" class="text-gray-500 hover:text-sys-blue ${i===state.accounts.length-1?'opacity-30 pointer-events-none':''}"><i class="fa-solid fa-arrow-down"></i></button>
+                        <button onclick="deleteMeta('account', '${acc}')" class="text-gray-500 hover:text-sys-danger ml-2"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                 </div>
             `).join('');
@@ -1007,29 +1009,29 @@
                     <h3 class="text-lg font-bold text-sys-blue uppercase mb-4"><i class="fa-solid fa-wallet mr-2"></i>帳戶管理</h3>
                     <div class="flex gap-2 mb-4">
                         <input type="text" id="new-account-name-settings" placeholder="新增帳戶名稱..." class="flex-1">
-                        <button onclick="window.addAccountSettings()" class="sys-btn py-1 px-4"><i class="fa-solid fa-plus"></i></button>
+                        <button onclick="addAccountSettings()" class="sys-btn py-1 px-4"><i class="fa-solid fa-plus"></i></button>
                     </div>
                     <div class="max-h-60 overflow-y-auto custom-scrollbar pr-2 space-y-1">
                         ${accListHtml}
                     </div>
                 </div>
                 <div class="grid grid-cols-1 gap-4">
-                    <div onclick="window.openCatsModal()" class="sys-panel p-6 flex justify-between items-center cursor-pointer hover:border-sys-blue transition-all group">
+                    <div onclick="openCatsModal()" class="sys-panel p-6 flex justify-between items-center cursor-pointer hover:border-sys-blue transition-all group">
                         <div><h3 class="text-lg font-bold text-sys-blue uppercase"><i class="fa-solid fa-tags mr-2"></i>分類架構管理</h3><p class="text-xs text-gray-400">新增、移除或排序分類</p></div>
                         <i class="fa-solid fa-chevron-right text-sys-blue opacity-50 group-hover:opacity-100"></i>
                     </div>
-                    <div onclick="window.openRulesModal()" class="sys-panel p-6 flex justify-between items-center cursor-pointer hover:border-sys-blue transition-all group">
+                    <div onclick="openRulesModal()" class="sys-panel p-6 flex justify-between items-center cursor-pointer hover:border-sys-blue transition-all group">
                         <div><h3 class="text-lg font-bold text-sys-blue uppercase"><i class="fa-solid fa-robot mr-2"></i>自動分類記憶庫</h3><p class="text-xs text-gray-400">管理關鍵字自動歸類規則</p></div>
                         <i class="fa-solid fa-chevron-right text-sys-blue opacity-50 group-hover:opacity-100"></i>
                     </div>
-                    <div onclick="window.toggleModal('modal-db')" class="sys-panel p-6 flex justify-between items-center cursor-pointer hover:border-sys-danger border-sys-danger/50 group">
+                    <div onclick="toggleModal('modal-db')" class="sys-panel p-6 flex justify-between items-center cursor-pointer hover:border-sys-danger border-sys-danger/50 group">
                         <div><h3 class="text-lg font-bold text-sys-danger uppercase"><i class="fa-solid fa-shield-halved mr-2"></i>系統核心資料庫</h3><p class="text-xs text-gray-400">備份、還原與系統重置</p></div>
                         <i class="fa-solid fa-chevron-right text-sys-danger opacity-50 group-hover:opacity-100"></i>
                     </div>
                     <div class="sys-panel p-6 border-t-4 border-sys-purple mt-4">
                         <h3 class="text-lg font-bold text-sys-purple uppercase mb-4"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>智能批次解析</h3>
                         <textarea id="batch-input" rows="4" placeholder="貼上文字，如：&#10;12/25 Costco餐飲 500 信用卡&#10;12/25 Costco代墊 1800 信用卡" class="w-full mb-4 font-mono text-sm"></textarea>
-                        <button onclick="window.processBatch()" class="sys-btn w-full !border-sys-purple !text-sys-purple hover:!bg-sys-purple hover:!text-white">執行解析程序</button>
+                        <button onclick="processBatch()" class="sys-btn w-full !border-sys-purple !text-sys-purple hover:!bg-sys-purple hover:!text-white">執行解析程序</button>
                     </div>
                 </div>
             `;
@@ -1063,13 +1065,13 @@
             if (val && !state.categories[type].includes(val)) {
                 state.categories[type].push(val);
                 document.getElementById('new-cat-name').value = '';
-                saveData(); window.renderCatList();
+                saveData(); renderCatList();
             }
         }
         function deleteCategory(type, val) {
             if(confirm(`刪除 [${val}]?`)) {
                 state.categories[type] = state.categories[type].filter(c => c !== val);
-                saveData(); window.renderCatList();
+                saveData(); renderCatList();
             }
         }
         function moveCategory(index, dir) {
@@ -1079,11 +1081,11 @@
             } else if (dir === 1 && index < state.categories[type].length - 1) {
                 [state.categories[type][index], state.categories[type][index+1]] = [state.categories[type][index+1], state.categories[type][index]];
             }
-            saveData(); window.renderCatList();
+            saveData(); renderCatList();
         }
 
-        function openCatsModal() { window.toggleModal('modal-cats'); window.renderCatList(); }
-        function switchCatType(type) { state.ui.catManageType = type; window.renderCatList(); }
+        function openCatsModal() { toggleModal('modal-cats'); renderCatList(); }
+        function switchCatType(type) { state.ui.catManageType = type; renderCatList(); }
         function renderCatList() {
             const type = state.ui.catManageType;
             const tabExp = document.getElementById('tab-cat-expense');
@@ -1099,26 +1101,26 @@
                 <div class="flex justify-between items-center p-3 bg-sys-blue/5 border border-sys-blue/20">
                     <span class="text-sm">${c}</span>
                     <div class="flex items-center gap-2">
-                        <button onclick="window.moveCategory(${i}, -1)" class="text-gray-500 hover:text-sys-blue ${i===0?'opacity-30 pointer-events-none':''}"><i class="fa-solid fa-arrow-up"></i></button>
-                        <button onclick="window.moveCategory(${i}, 1)" class="text-gray-500 hover:text-sys-blue ${i===state.categories[type].length-1?'opacity-30 pointer-events-none':''}"><i class="fa-solid fa-arrow-down"></i></button>
-                        <button onclick="window.deleteCategory('${type}', '${c}')" class="text-gray-500 hover:text-sys-danger ml-2"><i class="fa-solid fa-xmark"></i></button>
+                        <button onclick="moveCategory(${i}, -1)" class="text-gray-500 hover:text-sys-blue ${i===0?'opacity-30 pointer-events-none':''}"><i class="fa-solid fa-arrow-up"></i></button>
+                        <button onclick="moveCategory(${i}, 1)" class="text-gray-500 hover:text-sys-blue ${i===state.categories[type].length-1?'opacity-30 pointer-events-none':''}"><i class="fa-solid fa-arrow-down"></i></button>
+                        <button onclick="deleteCategory('${type}', '${c}')" class="text-gray-500 hover:text-sys-danger ml-2"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                 </div>
             `).join('');
             document.getElementById('cat-list-container').innerHTML = list;
         }
 
-        function openRulesModal() { window.toggleModal('modal-rules'); window.renderRuleList(); }
+        function openRulesModal() { toggleModal('modal-rules'); renderRuleList(); }
         function renderRuleList() {
             const html = Object.keys(state.keywordMap).length === 0 ? '<p class="text-gray-400 text-sm">無規則</p>' : 
             Object.entries(state.keywordMap).map(([k, c]) => `
                 <div class="flex justify-between items-center p-3 bg-sys-blue/5 border border-sys-blue/20">
                     <span class="text-sm">"${k}" &rarr; <strong class="text-sys-purple">${c}</strong></span>
-                    <button onclick="window.deleteRule('${k}')" class="text-gray-500 hover:text-sys-danger"><i class="fa-solid fa-xmark"></i></button>
+                    <button onclick="deleteRule('${k}')" class="text-gray-500 hover:text-sys-danger"><i class="fa-solid fa-xmark"></i></button>
                 </div>`).join('');
             document.getElementById('rule-list-container').innerHTML = html;
         }
-        function deleteRule(k) { delete state.keywordMap[k]; saveData(); window.renderRuleList(); }
+        function deleteRule(k) { delete state.keywordMap[k]; saveData(); renderRuleList(); }
 
         function processBatch() {
             const text = document.getElementById('batch-input').value;
@@ -1144,7 +1146,7 @@
                 }
             });
             document.getElementById('batch-input').value = '';
-            saveData(); window.showSystemToast(`解析完成 ${count} 筆`);
+            saveData(); showSystemToast(`解析完成 ${count} 筆`);
         }
         function exportData() {
             const a = document.createElement('a');
