@@ -65,7 +65,7 @@
             background: linear-gradient(90deg, transparent, theme('colors.sys.blue'), transparent);
         }
 
-        /* Form Elements */
+        /* 輸入框樣式 */
         input:not([type="checkbox"]), select, textarea {
             background-color: #1a1a2e !important;
             border: 1px solid theme('colors.sys.blue') !important;
@@ -78,6 +78,7 @@
             color-scheme: dark; 
         }
         
+        /* 核取方塊樣式 (復原顯示) */
         input[type="checkbox"] {
             -webkit-appearance: checkbox !important;
             appearance: auto !important;
@@ -138,7 +139,7 @@
         
         #main-content { padding-bottom: 160px !important; }
         
-        /* Mobile Modal Fix */
+        /* 視窗固定與捲動修正 */
         .modal-constraint {
             max-height: 85vh; 
             display: flex;
@@ -160,8 +161,8 @@
         .split-row { animation: fadeIn 0.3s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Interactive Elements Fix */
-        button, .sys-btn, .nav-item { cursor: pointer; pointer-events: auto; }
+        /* 強制所有可點擊元素游標 */
+        button, .sys-btn, .nav-item, input[type="checkbox"], .cursor-pointer { cursor: pointer; pointer-events: auto !important; }
     </style>
 </head>
 <body class="flex flex-col">
@@ -202,7 +203,7 @@
                 <button onclick="toggleModal('modal-tx')" class="text-sys-text hover:text-sys-danger"><i class="fa-solid fa-xmark text-2xl"></i></button>
             </div>
             <div class="p-6 modal-body custom-scrollbar">
-                <form id="form-tx" class="space-y-5">
+                <div class="space-y-5">
                     <input type="hidden" id="inp-id">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
@@ -270,9 +271,9 @@
                         <label class="block text-sys-blue text-sm font-bold mb-2 uppercase">備註 / 描述</label>
                         <input type="text" id="inp-note" placeholder="例如：全家午餐" class="w-full">
                     </div>
-                    <button type="submit" class="sys-btn w-full py-4 text-lg mb-4"><i class="fa-solid fa-floppy-disk mr-2"></i> 確認登錄</button>
+                    <button onclick="handleSubmitTx()" class="sys-btn w-full py-4 text-lg mb-4"><i class="fa-solid fa-floppy-disk mr-2"></i> 確認登錄</button>
                     <button type="button" id="btn-delete-tx" class="hidden sys-btn sys-btn-danger w-full mt-2" onclick="deleteCurrentTx()"><i class="fa-solid fa-trash mr-2"></i> 刪除紀錄</button>
-                </form>
+                </div>
             </div>
         </div>
     </div>
@@ -381,7 +382,8 @@
     <div id="system-toast-container" class="fixed top-20 right-4 z-50 flex flex-col space-y-4 pointer-events-none"></div>
 
     <script>
-        const APP_ID = 'finsys_solo_v9_2';
+        // ================= GLOBAL VARIABLES & CONFIG =================
+        const APP_ID = 'finsys_solo_v9_2'; // 保持資料庫 ID 不變
         const DEFAULT_ACCOUNTS = ['永豐 (活存)', '永豐 (預收暫存)', '現金', '信用卡'];
         const DEFAULT_CATEGORIES = {
             expense: ['餐飲', '交通', '購物', '娛樂', '居住', '醫療', '其他支出'],
@@ -409,7 +411,9 @@
         let mainChart = null; 
         let donutChart = null; 
 
-        // Core Functions (Hoisted)
+        // ================= GLOBAL FUNCTIONS (HOISTED) =================
+        // 這些函式現在直接暴露在 Global Scope，確保 HTML 按鈕一定能呼叫到
+
         function showSystemToast(message, type = 'success') {
             const container = document.getElementById('system-toast-container');
             const toast = document.createElement('div');
@@ -519,6 +523,8 @@
             if (cat === '系統調整' || cat === '帳戶餘額調整' || cat === '帳戶餘額修正') return false;
             return true;
         }
+
+        // --- UI ACTIONS ---
 
         function openSplitModal() {
             const amountStr = document.getElementById('inp-amount').value;
@@ -1097,6 +1103,7 @@
                 tabInc.className = "flex-1 py-2 text-sm text-sys-blue border-b-2 border-sys-blue font-bold";
                 tabExp.className = "flex-1 py-2 text-sm text-gray-500";
             }
+            
             const list = state.categories[type].map((c, i) => `
                 <div class="flex justify-between items-center p-3 bg-sys-blue/5 border border-sys-blue/20">
                     <span class="text-sm">${c}</span>
@@ -1165,6 +1172,47 @@
         }
         function resetData() { if(prompt('輸入RESET重置')==='RESET') { localStorage.removeItem(APP_ID); location.reload(); } }
 
+        function handleSubmitTx() {
+            // Manual validation because we are not using form submit event to avoid refresh
+            const amount = document.getElementById('inp-amount').value;
+            const date = document.getElementById('inp-date').value;
+            if(!amount || !date) {
+                showSystemToast("請輸入日期與金額", "error");
+                return;
+            }
+
+            const type = document.getElementById('inp-type').value;
+            const tx = {
+                id: document.getElementById('inp-id').value || Date.now().toString(),
+                date: date,
+                type: type,
+                amount: parseFloat(amount),
+                category: document.getElementById('inp-category').value,
+                accountFrom: document.getElementById('inp-account-from').value,
+                note: document.getElementById('inp-note').value,
+                isExcluded: false 
+            };
+            
+            if (type === 'transfer') {
+                tx.accountTo = document.getElementById('inp-account-to').value;
+                if (tx.accountFrom === tx.accountTo) return showSystemToast('轉出轉入帳戶不可相同', 'error');
+                tx.isRealization = document.getElementById('inp-realization').checked;
+            } else {
+                tx.isRealization = false;
+                tx.isExcluded = document.getElementById('inp-excluded').checked;
+            }
+
+            if (type === 'income') {
+                tx.isVerified = !document.getElementById('inp-deferred').checked;
+            } else {
+                tx.isVerified = true;
+            }
+
+            upsertTransaction(tx);
+            toggleModal('modal-tx');
+        }
+
+        // Init Sequence
         document.documentElement.classList.add('dark');
         loadData();
         state.ui.currentView = 'view-accounts'; 
