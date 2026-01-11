@@ -66,35 +66,22 @@
             background: linear-gradient(90deg, transparent, theme('colors.sys.blue'), transparent);
         }
 
-        /* [V10.5 Fix] 強制設定表單顏色，解決黑底黑字問題 */
+        /* 輸入框樣式 */
         input:not([type="checkbox"]), select, textarea {
             background-color: #1a1a2e !important;
             border: 1px solid theme('colors.sys.blue') !important;
-            color: #ffffff !important; /* 強制白字 */
+            color: #ffffff !important;
             border-radius: 4px !important;
             padding: 0.75rem !important;
             appearance: none;
         }
+        select option { background-color: #1a1a2e !important; color: #ffffff !important; }
         
-        /* 下拉選單選項顏色修正 */
-        select option {
-            background-color: #1a1a2e !important;
-            color: #ffffff !important;
-        }
-
-        input:focus, select:focus, textarea:focus {
-            outline: none !important;
-            box-shadow: theme('boxShadow.neon-blue') !important;
-            background-color: #232342 !important;
-        }
-
-        /* Custom Arrow for Select */
-        select {
-            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2300e1ff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-            background-position: right 0.5rem center; 
-            background-repeat: no-repeat; 
-            background-size: 1.5em 1.5em;
-            padding-right: 2.5rem !important; 
+        input[type="checkbox"] {
+            -webkit-appearance: checkbox !important;
+            appearance: auto !important;
+            width: 1.25rem; height: 1.25rem;
+            cursor: pointer;
         }
 
         .sys-btn {
@@ -110,20 +97,17 @@
 
         .nav-item.active { color: theme('colors.sys.blue'); border-top: 2px solid theme('colors.sys.blue'); text-shadow: 0 0 10px theme('colors.sys.blue'); }
         
-        /* Modal Fixes */
+        /* Modal Styles */
         .modal-wrapper { z-index: 100; }
         .hidden-force { display: none !important; }
-        
         .modal-constraint {
             max-height: 85vh; 
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            display: flex; flex-direction: column; overflow: hidden;
         }
         .modal-header { flex-shrink: 0; background-color: theme('colors.sys.bg'); z-index: 10; }
         .modal-body { flex-grow: 1; overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
 
-        /* Force Clickability */
+        /* Clickability Fix */
         button, .sys-btn, .nav-item, .record-item-row { cursor: pointer; pointer-events: auto !important; }
         
         #main-content { padding-bottom: 120px; }
@@ -170,10 +154,7 @@
                 <div class="space-y-5">
                     <input type="hidden" id="inp-id">
                     <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sys-blue text-sm font-bold mb-2">日期</label>
-                            <input type="date" id="inp-date" class="w-full">
-                        </div>
+                        <div><label class="block text-sys-blue text-sm font-bold mb-2">日期</label><input type="date" id="inp-date" class="w-full"></div>
                         <div>
                             <label class="block text-sys-blue text-sm font-bold mb-2">類型</label>
                             <select id="inp-type" class="w-full" onchange="refreshCats()">
@@ -183,59 +164,36 @@
                             </select>
                         </div>
                     </div>
-                    
                     <div id="opt-deferred" class="hidden-force">
                          <label class="flex items-center space-x-3 p-3 sys-panel cursor-pointer border border-sys-warn/50">
-                            <input type="checkbox" id="chk-deferred" class="form-checkbox h-5 w-5 bg-transparent border-sys-warn">
-                            <span class="text-sys-warn font-bold">⏳ 預收帳款 (暫不計入收入)</span>
+                            <input type="checkbox" id="chk-deferred" class="form-checkbox h-5 w-5 bg-transparent border-sys-warn"><span class="text-sys-warn font-bold">⏳ 預收帳款</span>
                         </label>
                     </div>
-
                     <div id="opt-realize" class="hidden-force">
                         <label class="flex items-center space-x-3 p-3 sys-panel cursor-pointer border border-sys-success/50">
-                           <input type="checkbox" id="chk-realize" class="form-checkbox h-5 w-5 bg-transparent border-sys-success">
-                           <span class="text-sys-success font-bold">🚀 認列為實質收入 (核銷)</span>
+                           <input type="checkbox" id="chk-realize" class="form-checkbox h-5 w-5 bg-transparent border-sys-success"><span class="text-sys-success font-bold">🚀 認列實質收入</span>
                        </label>
                     </div>
-
                    <div id="opt-exclude" class="hidden-force">
                         <label class="flex items-center space-x-3 p-3 sys-panel cursor-pointer border border-gray-600">
-                            <input type="checkbox" id="chk-exclude" class="form-checkbox h-5 w-5 bg-transparent border-gray-500">
-                            <span class="text-gray-400 font-bold">🚫 不列入收支統計</span>
+                            <input type="checkbox" id="chk-exclude" class="form-checkbox h-5 w-5 bg-transparent border-gray-500"><span class="text-gray-400 font-bold">🚫 不列入統計</span>
                         </label>
-                        <p class="text-xs text-gray-400 mt-1 pl-2">* 勾選後，只調整餘額，不計入圖表。</p>
                    </div>
-
                     <div>
                         <label class="block text-sys-blue text-sm font-bold mb-2">金額</label>
                         <div class="flex gap-2">
                             <input type="number" id="inp-amount" placeholder="0" class="w-full text-2xl font-bold text-sys-blue">
-                            <button onclick="openSplitModal()" class="sys-btn px-4 bg-sys-blue/10 border-sys-purple text-sys-purple hover:bg-sys-purple hover:text-white">
-                                <i class="fa-solid fa-scissors"></i> 拆帳
-                            </button>
+                            <button onclick="openSplitModal()" class="sys-btn px-4 bg-sys-blue/10 border-sys-purple text-sys-purple">拆帳</button>
                         </div>
                     </div>
-                    
                     <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sys-blue text-sm font-bold mb-2" id="lbl-from">帳戶</label>
-                            <select id="sel-from" class="w-full"></select>
-                        </div>
-                         <div id="grp-to" class="hidden-force">
-                            <label class="block text-sys-blue text-sm font-bold mb-2">轉入帳戶</label>
-                            <select id="sel-to" class="w-full"></select>
-                        </div>
+                        <div><label class="block text-sys-blue text-sm font-bold mb-2" id="lbl-from">帳戶</label><select id="sel-from" class="w-full"></select></div>
+                         <div id="grp-to" class="hidden-force"><label class="block text-sys-blue text-sm font-bold mb-2">轉入帳戶</label><select id="sel-to" class="w-full"></select></div>
                     </div>
-                    <div>
-                        <label class="block text-sys-blue text-sm font-bold mb-2">分類</label>
-                         <select id="sel-cat" class="w-full"></select>
-                    </div>
-                    <div>
-                        <label class="block text-sys-blue text-sm font-bold mb-2">備註</label>
-                        <input type="text" id="inp-note" placeholder="例如：全家午餐" class="w-full">
-                    </div>
+                    <div><label class="block text-sys-blue text-sm font-bold mb-2">分類</label><select id="sel-cat" class="w-full"></select></div>
+                    <div><label class="block text-sys-blue text-sm font-bold mb-2">備註</label><input type="text" id="inp-note" placeholder="例如：午餐" class="w-full"></div>
                     <button onclick="saveTx()" class="sys-btn w-full py-4 text-lg mb-4 bg-sys-blue/10">確認登錄</button>
-                    <button onclick="delTx()" id="btn-del" class="hidden-force sys-btn sys-btn-danger w-full mt-2"><i class="fa-solid fa-trash mr-2"></i> 刪除紀錄</button>
+                    <button onclick="delTx()" id="btn-del" class="hidden-force sys-btn sys-btn-danger w-full mt-2">刪除紀錄</button>
                 </div>
             </div>
         </div>
@@ -245,29 +203,19 @@
         <div class="absolute inset-0 bg-black/95 backdrop-blur-sm" onclick="closeModal('modal-split')"></div>
         <div class="relative w-full sm:w-auto sm:max-w-lg bg-sys-bg rounded-t-2xl sm:rounded-2xl modal-constraint border border-sys-purple">
             <div class="p-4 border-b border-sys-purple flex justify-between items-center bg-sys-panel modal-header">
-                <h3 class="text-xl font-bold text-sys-purple uppercase"><i class="fa-solid fa-scissors mr-2"></i>消費拆帳</h3>
-                <button onclick="closeModal('modal-split')" class="text-sys-text hover:text-sys-danger"><i class="fa-solid fa-xmark text-2xl"></i></button>
+                <h3 class="text-xl font-bold text-sys-purple">消費拆帳</h3>
+                <button onclick="closeModal('modal-split')" class="text-sys-text"><i class="fa-solid fa-xmark text-2xl"></i></button>
             </div>
             <div class="p-4 modal-body custom-scrollbar">
-                <div class="mb-4 text-center">
-                    <p class="text-gray-400 text-xs uppercase tracking-widest mb-1">總金額</p>
-                    <div class="text-3xl font-bold text-sys-blue" id="split-total">$0</div>
-                </div>
+                <div class="mb-4 text-center"><p class="text-gray-400 text-xs">總金額</p><div class="text-3xl font-bold text-sys-blue" id="split-total">$0</div></div>
                 <div id="split-rows" class="space-y-3"></div>
-                <div class="hidden-force mt-3 p-3 border border-dashed border-gray-600 rounded bg-gray-900/50 cursor-pointer" id="split-ghost" onclick="addSplitGhost()">
-                    <div class="flex items-center justify-between text-gray-400 pointer-events-none">
-                        <span><i class="fa-solid fa-plus-circle mr-2"></i> 自動填入剩餘款項</span>
-                        <span class="font-bold font-mono text-sys-purple" id="split-remain">$0</span>
-                    </div>
+                <div class="hidden-force mt-3 p-3 border border-dashed border-gray-600 rounded cursor-pointer" id="split-ghost" onclick="addSplitGhost()">
+                    <div class="flex items-center justify-between text-gray-400 pointer-events-none"><span><i class="fa-solid fa-plus-circle mr-2"></i> 自動填入剩餘</span><span class="font-bold font-mono text-sys-purple" id="split-remain">$0</span></div>
                 </div>
             </div>
             <div class="p-4 border-t border-sys-purple bg-sys-panel modal-header flex gap-3">
-                <div class="flex-1 text-xs flex flex-col justify-center">
-                    <span class="text-gray-400">已分配: <span id="split-sum" class="text-sys-text font-bold">$0</span></span>
-                </div>
-                <button onclick="confirmSplit()" class="sys-btn flex-1 !border-sys-purple !text-sys-purple hover:!bg-sys-purple hover:!text-white">
-                    <i class="fa-solid fa-check-double mr-2"></i> 確認拆帳
-                </button>
+                <div class="flex-1 text-xs flex flex-col justify-center"><span class="text-gray-400">已分配: <span id="split-sum" class="text-sys-text font-bold">$0</span></span></div>
+                <button onclick="confirmSplit()" class="sys-btn flex-1 !border-sys-purple !text-sys-purple">確認拆帳</button>
             </div>
         </div>
     </div>
@@ -278,14 +226,8 @@
             <h3 class="text-xl font-bold text-sys-blue uppercase mb-4">帳戶管理</h3>
             <input type="hidden" id="acc-old">
             <div class="space-y-4">
-                <div>
-                    <label class="block text-sys-blue text-sm mb-1">帳戶名稱</label>
-                    <input type="text" id="acc-name" class="w-full" placeholder="例如：永豐">
-                </div>
-                <div>
-                    <label class="block text-sys-blue text-sm mb-1">當前餘額 (修正用)</label>
-                    <input type="number" id="acc-bal" class="w-full" placeholder="0">
-                </div>
+                <div><label class="block text-sys-blue text-sm mb-1">帳戶名稱</label><input type="text" id="acc-name" class="w-full"></div>
+                <div><label class="block text-sys-blue text-sm mb-1">當前餘額 (修正用)</label><input type="number" id="acc-bal" class="w-full"></div>
                 <button onclick="saveAcc()" class="sys-btn w-full">儲存變更</button>
             </div>
         </div>
@@ -294,27 +236,42 @@
     <div id="modal-cats" class="modal-wrapper fixed inset-0 hidden-force flex items-center justify-center">
         <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closeModal('modal-cats')"></div>
         <div class="sys-panel w-full max-w-md m-4 p-6 relative bg-sys-bg h-3/4 flex flex-col border border-sys-blue">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-sys-blue uppercase">分類管理</h3>
-                <button onclick="closeModal('modal-cats')" class="text-sys-text"><i class="fa-solid fa-xmark text-xl"></i></button>
-            </div>
+            <div class="flex justify-between items-center mb-4"><h3 class="text-xl font-bold text-sys-blue">分類管理</h3><button onclick="closeModal('modal-cats')"><i class="fa-solid fa-xmark text-xl"></i></button></div>
             <div class="flex mb-4 border-b border-sys-blue/30 shrink-0">
                 <button onclick="setCatTab('expense')" id="tab-c-exp" class="flex-1 py-2 text-sys-blue border-b-2 border-sys-blue font-bold">支出</button>
                 <button onclick="setCatTab('income')" id="tab-c-inc" class="flex-1 py-2 text-gray-500">收入</button>
             </div>
-            <div class="flex gap-2 mb-4 shrink-0">
-                <input type="text" id="new-cat" class="flex-1" placeholder="新分類...">
-                <button onclick="addCat()" class="sys-btn py-1 px-4"><i class="fa-solid fa-plus"></i></button>
-            </div>
+            <div class="flex gap-2 mb-4 shrink-0"><input type="text" id="new-cat" class="flex-1" placeholder="新分類..."><button onclick="addCat()" class="sys-btn py-1 px-4">+</button></div>
             <div id="cat-list" class="overflow-y-auto flex-1 space-y-1 pr-2 custom-scrollbar"></div>
+        </div>
+    </div>
+
+    <div id="modal-rules" class="modal-wrapper fixed inset-0 hidden-force flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closeModal('modal-rules')"></div>
+        <div class="sys-panel w-full max-w-md m-4 p-6 relative bg-sys-bg h-3/4 flex flex-col border border-sys-blue">
+            <div class="flex justify-between items-center mb-4"><h3 class="text-xl font-bold text-sys-blue">自動分類</h3><button onclick="closeModal('modal-rules')"><i class="fa-solid fa-xmark text-xl"></i></button></div>
+            <div id="rule-list" class="overflow-y-auto flex-1 space-y-2 pr-2 custom-scrollbar"></div>
+        </div>
+    </div>
+
+    <div id="modal-db" class="modal-wrapper fixed inset-0 hidden-force flex items-center justify-center">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closeModal('modal-db')"></div>
+        <div class="sys-panel w-full max-w-md m-4 p-6 relative border border-sys-danger bg-sys-bg">
+            <h3 class="text-xl font-bold text-sys-danger mb-4">資料庫管理</h3>
+            <div class="space-y-4">
+                <button onclick="exportData()" class="sys-btn w-full">匯出備份</button>
+                <div class="relative"><button class="sys-btn w-full">匯入還原</button><input type="file" class="absolute inset-0 opacity-0" onchange="importData(event)"></div>
+                <button onclick="resetAll()" class="sys-btn sys-btn-danger w-full mt-4">重置系統</button>
+                <button onclick="scanForOldData()" class="w-full text-center text-xs text-gray-500 mt-4 underline">🛠️ 救援舊資料</button>
+            </div>
         </div>
     </div>
 
     <div id="toast-box" class="fixed top-20 right-4 z-[200] flex flex-col space-y-2 pointer-events-none"></div>
 
     <script>
-        // ================= GLOBAL CONFIG =================
-        const APP_ID = 'finsys_solo_v9_2'; // 保持 ID 以讀取舊資料
+        // ================= CONFIG =================
+        const APP_ID = 'finsys_solo_v9_2';
         const DEFAULTS = {
             accounts: ['永豐 (活存)', '現金', '信用卡'],
             categories: {
@@ -330,19 +287,19 @@
             categories: JSON.parse(JSON.stringify(DEFAULTS.categories)),
             keywordMap: {},
             settings: { currency: 'TWD' },
-            ui: { view: 'view-accounts', chartYear: new Date().getFullYear(), chartMonth: 'all', tab: 'expense', catTab: 'expense' }
+            ui: { view: 'view-accounts', chartYear: new Date().getFullYear(), chartMonth: 'all', tab: 'expense', catTab: 'expense', activeAccountDetail: null }
         };
 
         let splitState = { total: 0, rows: [] };
         let mainChart = null, donutChart = null;
 
-        // ================= CORE FUNCTIONS =================
+        // ================= CORE =================
         function toast(msg, type='success') {
             const box = document.getElementById('toast-box');
             const div = document.createElement('div');
-            const color = type === 'error' ? 'text-sys-danger border-sys-danger' : 'text-sys-blue border-sys-blue';
-            div.className = `bg-sys-bg border ${color} p-3 shadow-lg animate-[slideInRight_0.3s_ease-out]`;
-            div.innerHTML = `<i class="fa-solid ${type==='error'?'fa-circle-exclamation':'fa-check-circle'} mr-2"></i>${msg}`;
+            const color = type==='error' ? 'border-sys-danger text-sys-danger' : 'border-sys-blue text-sys-blue';
+            div.className = `bg-sys-bg border p-3 shadow-lg ${color}`;
+            div.innerHTML = `<i class="fa-solid ${type==='error'?'fa-triangle-exclamation':'fa-check'} mr-2"></i>${msg}`;
             box.appendChild(div);
             setTimeout(() => div.remove(), 3000);
         }
@@ -357,18 +314,17 @@
                 try {
                     const saved = JSON.parse(json);
                     state = { ...state, ...saved };
+                    // Safe Check
                     if (!state.categories.transfer) state.categories.transfer = DEFAULTS.categories.transfer;
-                } catch (e) { 
-                    console.error(e);
-                    toast("資料讀取錯誤", 'error');
-                }
+                } catch (e) { console.error(e); }
             }
         }
         function saveData() { localStorage.setItem(APP_ID, JSON.stringify(state)); renderCurrentView(); }
 
-        // --- ROUTER ---
+        // ================= ROUTER =================
         function changeView(id) {
             state.ui.view = id;
+            if(id !== 'view-accounts') state.ui.activeAccountDetail = null; // Clear acc detail if moving away
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('text-sys-blue', 'border-t-2', 'border-sys-blue'));
             document.getElementById(id.replace('view', 'nav')).classList.add('text-sys-blue', 'border-t-2', 'border-sys-blue');
             renderCurrentView();
@@ -377,13 +333,18 @@
         function renderCurrentView() {
             const main = document.getElementById('main-content');
             main.innerHTML = '';
-            if (state.ui.view === 'view-accounts') renderAccounts(main);
-            else if (state.ui.view === 'view-dashboard') renderDashboard(main);
-            else if (state.ui.view === 'view-records') renderRecords(main);
-            else if (state.ui.view === 'view-settings') renderSettings(main);
+            const v = state.ui.view;
+            
+            if (v === 'view-accounts') {
+                if (state.ui.activeAccountDetail) renderAccountDetail(main, state.ui.activeAccountDetail);
+                else renderAccounts(main);
+            }
+            else if (v === 'view-dashboard') renderDashboard(main);
+            else if (v === 'view-records') renderRecords(main);
+            else if (v === 'view-settings') renderSettings(main);
         }
 
-        // --- RENDERERS ---
+        // ================= RENDERERS =================
         function renderAccounts(c) {
             const total = state.accounts.reduce((s, a) => s + getBal(a), 0);
             let h = `
@@ -396,7 +357,7 @@
             state.accounts.forEach(a => {
                 const bal = getBal(a);
                 h += `
-                    <div class="sys-panel p-5 flex justify-between items-center cursor-pointer hover:border-sys-blue hover:shadow-neon-blue transition-all" onclick="openAccModal('${a}')">
+                    <div class="sys-panel p-5 flex justify-between items-center cursor-pointer hover:border-sys-blue hover:shadow-neon-blue transition-all" onclick="enterAccDetail('${a}')">
                         <div class="flex items-center gap-4">
                             <div class="w-10 h-10 border border-sys-blue flex items-center justify-center text-sys-blue rounded"><i class="fa-solid fa-wallet"></i></div>
                             <span class="font-bold text-lg">${a}</span>
@@ -409,17 +370,42 @@
             c.innerHTML = h;
         }
 
+        // [V10.6] Account Detail Logic Restored
+        function enterAccDetail(name) {
+            state.ui.activeAccountDetail = name;
+            renderCurrentView();
+        }
+        function renderAccountDetail(c, acc) {
+            const bal = getBal(acc);
+            const txs = state.transactions.filter(t => t.accountFrom === acc || t.accountTo === acc);
+            c.innerHTML = `
+                <button onclick="enterAccDetail(null)" class="mb-4 text-sys-blue hover:underline flex items-center font-bold"><i class="fa-solid fa-chevron-left mr-2"></i> 返回帳戶總覽</button>
+                <div class="sys-panel p-6 mb-6 border-l-4 border-sys-blue flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-bold uppercase text-sys-blue mb-2">${acc}</h2>
+                        <p class="text-3xl font-bold ${bal >= 0 ? 'text-sys-blue' : 'text-sys-danger'}">${formatCurrency(bal)}</p>
+                    </div>
+                    <button onclick="openAccModal('${acc}')" class="sys-btn text-xs"><i class="fa-solid fa-pen mr-2"></i> 編輯</button>
+                </div>
+                <h3 class="text-sys-blue font-bold mb-4">交易紀錄</h3>
+                <div class="space-y-3">
+                    ${txs.length ? txs.slice(0,50).map(t => renderTxItem(t)).join('') : '<div class="text-gray-500 text-center">無紀錄</div>'}
+                </div>
+            `;
+        }
+
         function renderDashboard(c) {
             const y = state.ui.chartYear, m = state.ui.chartMonth;
             const prefix = m === 'all' ? `${y}-` : `${y}-${String(parseInt(m)+1).padStart(2,'0')}`;
-            let inc = 0, exp = 0;
-            const filtered = state.transactions.filter(t => t.date.startsWith(prefix) && !shouldExclude(t));
             
-            filtered.forEach(t => {
-                const amt = parseFloat(t.amount);
-                if (t.type === 'income') inc += amt;
-                else if (t.type === 'expense') exp += amt;
-                else if (t.type === 'transfer' && t.isRealization) inc += amt;
+            // Calc
+            let inc=0, exp=0;
+            const txs = state.transactions.filter(t => t.date.startsWith(prefix) && !shouldExclude(t));
+            txs.forEach(t => {
+                const v = parseFloat(t.amount);
+                if (t.type === 'income') inc += v;
+                else if (t.type === 'expense') exp += v;
+                else if (t.type === 'transfer' && t.isRealization) inc += v;
             });
 
             c.innerHTML = `
@@ -428,14 +414,14 @@
                     <div class="sys-panel p-4 border-l-4 border-sys-danger"><div class="text-xs text-sys-danger font-bold">支出</div><div class="text-2xl font-bold">${formatCurrency(exp)}</div></div>
                 </div>
                 <div class="sys-panel p-4 mb-6">
-                    <div class="flex justify-between mb-4"><h3 class="font-bold text-sys-blue uppercase">收支趨勢</h3><div class="flex gap-2">
-                        <select onchange="setFilter('year',this.value)" class="bg-sys-bg border border-sys-blue text-xs p-1 rounded text-white">${getYearOpts()}</select>
-                        <select onchange="setFilter('month',this.value)" class="bg-sys-bg border border-sys-blue text-xs p-1 rounded text-white">${getMonthOpts()}</select>
+                    <div class="flex justify-between mb-4"><h3 class="font-bold text-sys-blue">收支趨勢</h3><div class="flex gap-2">
+                        <select onchange="setFilter('year',this.value)" class="bg-sys-bg border border-sys-blue text-xs p-1 rounded">${getYearOpts()}</select>
+                        <select onchange="setFilter('month',this.value)" class="bg-sys-bg border border-sys-blue text-xs p-1 rounded">${getMonthOpts()}</select>
                     </div></div>
                     <div class="h-48"><canvas id="chart-main"></canvas></div>
                 </div>
                 <div class="sys-panel p-4 mb-6">
-                    <h3 class="font-bold text-sys-blue mb-4 uppercase">分類結構分析</h3>
+                    <h3 class="font-bold text-sys-blue mb-4">分類結構分析</h3>
                     <div class="flex mb-4 border-b border-sys-blue/30"><button onclick="setTab('expense')" class="flex-1 py-2 ${state.ui.tab==='expense'?'text-sys-blue border-b-2 border-sys-blue':''}">支出</button><button onclick="setTab('income')" class="flex-1 py-2 ${state.ui.tab==='income'?'text-sys-blue border-b-2 border-sys-blue':''}">收入</button><button onclick="setTab('excluded')" class="flex-1 py-2 ${state.ui.tab==='excluded'?'text-sys-warn border-b-2 border-sys-warn':''}">追蹤項</button></div>
                     <div class="flex flex-col md:flex-row gap-6">
                         <div class="h-48 w-full md:w-1/2 flex justify-center"><canvas id="chart-donut"></canvas></div>
@@ -443,15 +429,21 @@
                     </div>
                 </div>
                 <div class="sys-panel p-4">
-                    <h4 class="text-sm font-bold text-gray-400 mb-3 uppercase">該區間帳務明細</h4>
+                    <h4 class="text-sm font-bold text-gray-400 mb-3">該區間帳務明細</h4>
                     <div id="dashboard-list" class="space-y-3"></div>
                 </div>
             `;
-            setTimeout(() => { drawCharts(y, m); renderBreakdown(filtered); renderDashList(state.transactions.filter(t => t.date.startsWith(prefix))); }, 50);
+            setTimeout(() => { 
+                drawCharts(y, m); 
+                // Pass raw filtered list for breakdown, regardless of exclusion
+                const rawTxs = state.transactions.filter(t => t.date.startsWith(prefix));
+                renderBreakdown(rawTxs); 
+                renderDashList(txs); // List shows valid stats only? No, user wants everything usually. Let's show filtered.
+            }, 50);
         }
 
         function renderRecords(c) {
-            let h = `<h2 class="text-xl font-bold text-sys-blue mb-4 uppercase">近期紀錄</h2><div class="space-y-3">`;
+            let h = `<h2 class="text-xl font-bold text-sys-blue mb-4">近期紀錄</h2><div class="space-y-3">`;
             if (state.transactions.length === 0) h += `<div class="text-center text-gray-500 py-8">尚無資料</div>`;
             state.transactions.slice(0, 50).forEach(t => h += renderTxItem(t));
             h += `</div>`;
@@ -483,15 +475,15 @@
                 <div class="flex justify-between p-3 bg-sys-blue/5 border border-sys-blue/20 rounded mb-1">
                     <span class="font-bold text-sm">${a}</span>
                     <div class="flex gap-2">
-                        <button onclick="moveAcc(${i},-1)" class="text-sys-blue px-2"><i class="fa-solid fa-arrow-up"></i></button>
-                        <button onclick="moveAcc(${i},1)" class="text-sys-blue px-2"><i class="fa-solid fa-arrow-down"></i></button>
-                        <button onclick="delAcc('${a}')" class="text-sys-danger px-2"><i class="fa-solid fa-xmark"></i></button>
+                        <button onclick="moveAcc(${i},-1)" class="text-sys-blue px-2">⬆️</button>
+                        <button onclick="moveAcc(${i},1)" class="text-sys-blue px-2">⬇️</button>
+                        <button onclick="delAcc('${a}')" class="text-sys-danger px-2">✕</button>
                     </div>
                 </div>
             `).join('');
 
             c.innerHTML = `
-                <h2 class="text-xl font-bold text-sys-blue mb-6 uppercase">設定</h2>
+                <h2 class="text-xl font-bold text-sys-blue mb-6">設定</h2>
                 
                 <div class="sys-panel p-6 mb-6">
                     <h3 class="text-lg font-bold text-sys-blue mb-4 border-b border-sys-blue/30 pb-2">帳戶排序管理</h3>
@@ -511,20 +503,12 @@
                         <span><i class="fa-solid fa-robot mr-2"></i> 自動分類記憶庫</span>
                         <i class="fa-solid fa-chevron-right text-gray-500 group-hover:text-sys-blue"></i>
                     </button>
-                    
-                    <div class="sys-panel p-6 border-t-4 border-sys-purple mt-2">
-                        <h3 class="text-lg font-bold text-sys-purple uppercase mb-4">智能批次解析</h3>
-                        <textarea id="batch-input" rows="4" placeholder="貼上文字，如：&#10;12/25 Costco餐飲 500 信用卡&#10;12/25 Costco代墊 1800 信用卡" class="w-full mb-4 font-mono text-sm bg-sys-bg border border-sys-purple rounded p-2 text-white"></textarea>
-                        <button onclick="processBatch()" class="sys-btn w-full !border-sys-purple !text-sys-purple hover:!bg-sys-purple hover:!text-white">執行解析程序</button>
-                    </div>
-
                     <div class="sys-panel p-6 border border-sys-danger/30 mt-4">
                         <h3 class="text-lg font-bold text-sys-danger uppercase mb-4">資料庫管理</h3>
                         <div class="space-y-3">
                             <button onclick="exportData()" class="sys-btn w-full">匯出備份檔案</button>
                             <div class="relative"><button class="sys-btn w-full">匯入備份還原</button><input type="file" class="absolute inset-0 opacity-0 cursor-pointer" onchange="importData(event)"></div>
                             <button onclick="resetAll()" class="sys-btn sys-btn-danger w-full mt-2">格式化重置系統</button>
-                            
                             <button onclick="scanForOldData()" class="w-full text-center text-xs text-gray-500 hover:text-sys-blue mt-4 underline">🛠️ 掃描與還原舊資料</button>
                         </div>
                     </div>
@@ -532,7 +516,7 @@
             `;
         }
 
-        // ================= LOGIC =================
+        // ================= LOGIC HELPERS =================
         function getBal(acc) {
             let b = 0;
             state.transactions.forEach(t => {
@@ -549,7 +533,6 @@
         function shouldExclude(t) {
             if (t.isExcluded) return true;
             const c = (t.category || '').trim();
-            // [V10.5 Fix] Expanded exclude list
             return ['系統調整', '帳戶餘額調整', '帳戶餘額修正', '初期餘額'].includes(c);
         }
 
@@ -565,7 +548,7 @@
         function setFilter(k, v) { state.ui[k==='year'?'chartYear':'chartMonth'] = v; renderCurrentView(); }
         function setTab(t) { state.ui.tab = t; renderCurrentView(); }
 
-        // Charts
+        // --- CHART & BREAKDOWN ---
         function drawCharts(y, m) {
             const cvs = document.getElementById('chart-main');
             if(!cvs) return;
@@ -605,7 +588,13 @@
             if(donutChart) donutChart.destroy();
 
             const type = state.ui.tab;
-            const items = txs.filter(t => type === 'excluded' ? shouldExclude(t) : (t.type === type && !shouldExclude(t)));
+            // For breakdown, we check if we want Excluded or Normal items
+            const items = txs.filter(t => {
+                if (type === 'excluded') return shouldExclude(t);
+                // For normal tabs, must match type AND NOT be excluded
+                return t.type === type && !shouldExclude(t);
+            });
+
             const groups = {};
             let total = 0;
             items.forEach(t => {
@@ -617,7 +606,7 @@
             const sorted = Object.entries(groups).sort((a,b) => b[1]-a[1]);
             
             if (sorted.length === 0) {
-                list.innerHTML = '<div class="text-center text-gray-500 py-4">無資料</div>';
+                list.innerHTML = '<div class="text-center text-gray-500 py-4">此區間無資料</div>';
                 return;
             }
 
@@ -646,7 +635,6 @@
 
         // --- TX MODAL ---
         function openTxModal(id) {
-            // Reset
             ['inp-id','inp-amount','inp-note'].forEach(k=>document.getElementById(k).value='');
             document.getElementById('inp-date').valueAsDate = new Date();
             document.getElementById('inp-type').value = 'expense';
@@ -656,7 +644,6 @@
             document.getElementById('modal-tx-title').innerText = '新增紀錄';
             document.getElementById('btn-del').classList.add('hidden-force');
 
-            // Load
             if(id) {
                 const t = state.transactions.find(x => x.id === id);
                 if(t) {
@@ -673,7 +660,6 @@
                 }
             }
             refreshCats();
-            // Restore selects
             if(id) {
                 const t = state.transactions.find(x => x.id === id);
                 if(t) {
@@ -707,7 +693,7 @@
             const d = document.getElementById('inp-date').value;
             const a = parseFloat(document.getElementById('inp-amount').value);
             const t = document.getElementById('inp-type').value;
-            if(!d || isNaN(a)) return alert('請輸入完整資料');
+            if(!d || isNaN(a)) return toast('請輸入資料', 'error');
 
             const tx = {
                 id: id || Date.now().toString(),
@@ -720,7 +706,7 @@
 
             if(t === 'transfer') {
                 tx.accountTo = document.getElementById('sel-to').value;
-                if(tx.accountFrom === tx.accountTo) return alert('帳戶不能相同');
+                if(tx.accountFrom === tx.accountTo) return toast('帳戶相同', 'error');
                 tx.isRealization = document.getElementById('chk-realize').checked;
             } else {
                 tx.isExcluded = document.getElementById('chk-exclude').checked;
@@ -744,7 +730,7 @@
             }
         }
 
-        // 帳戶操作
+        // --- ACC & OTHERS ---
         function openAccModal(name) {
             document.getElementById('acc-name').value = name || '';
             document.getElementById('acc-bal').value = name ? getBal(name) : '';
@@ -755,11 +741,9 @@
             const name = document.getElementById('acc-name').value;
             const oldName = document.getElementById('acc-old').value;
             const bal = parseFloat(document.getElementById('acc-bal').value);
-            
             if (!name) return;
             
             if (oldName && oldName !== name) {
-                // Rename logic
                 state.accounts = state.accounts.map(a => a === oldName ? name : a);
                 state.transactions.forEach(t => {
                     if(t.accountFrom === oldName) t.accountFrom = name;
@@ -769,19 +753,13 @@
                 state.accounts.push(name);
             }
             
-            // Adjust Balance Logic
             if (!isNaN(bal)) {
-                const current = getBal(name);
-                const diff = bal - current;
+                const diff = bal - getBal(name);
                 if (Math.abs(diff) > 0.01) {
                     state.transactions.unshift({
-                        id: Date.now().toString(),
-                        date: new Date().toISOString().split('T')[0],
-                        type: diff > 0 ? 'income' : 'expense',
-                        amount: Math.abs(diff),
-                        category: '帳戶餘額調整',
-                        accountFrom: name,
-                        note: '餘額修正',
+                        id: Date.now().toString(), date: new Date().toISOString().split('T')[0],
+                        type: diff > 0 ? 'income' : 'expense', amount: Math.abs(diff),
+                        category: '帳戶餘額調整', accountFrom: name, note: '修正',
                         isExcluded: false, isRealization: false, isVerified: true
                     });
                 }
@@ -789,79 +767,42 @@
             saveData();
             closeModal('modal-acc');
         }
-        function moveAcc(idx, dir) {
-            if (dir === -1 && idx > 0) [state.accounts[idx], state.accounts[idx-1]] = [state.accounts[idx-1], state.accounts[idx]];
-            if (dir === 1 && idx < state.accounts.length-1) [state.accounts[idx], state.accounts[idx+1]] = [state.accounts[idx+1], state.accounts[idx]];
-            saveData();
-        }
-        function delAcc(name) {
-            if (confirm('刪除?')) {
-                state.accounts = state.accounts.filter(a => a !== name);
+        function moveAcc(i, d) {
+            if((d===-1&&i>0)||(d===1&&i<state.accounts.length-1)) {
+                [state.accounts[i], state.accounts[i+d]] = [state.accounts[i+d], state.accounts[i]];
                 saveData();
             }
         }
+        function delAcc(n) { if(confirm('刪除?')) { state.accounts = state.accounts.filter(a=>a!==n); saveData(); } }
         function addAccSet() { 
             const n = document.getElementById('new-acc-name').value;
             if(n && !state.accounts.includes(n)) { state.accounts.push(n); saveData(); }
         }
 
-        // 分類管理
-        function openCatsModal() { 
-            state.ui.catTab = 'expense';
-            renderCatList();
-            openModal('modal-cats'); 
-        }
+        // Cats
+        function openCatsModal() { state.ui.catTab = 'expense'; renderCatList(); openModal('modal-cats'); }
         function setCatTab(t) { state.ui.catTab = t; renderCatList(); }
         function renderCatList() {
             const t = state.ui.catTab;
-            const c = document.getElementById('cat-list');
             document.getElementById('tab-c-exp').className = `flex-1 py-2 ${t==='expense'?'text-sys-blue border-b-2 border-sys-blue':''}`;
             document.getElementById('tab-c-inc').className = `flex-1 py-2 ${t==='income'?'text-sys-blue border-b-2 border-sys-blue':''}`;
-            c.innerHTML = state.categories[t].map((n, i) => `
-                <div class="flex justify-between p-3 border-b border-white/10">
-                    <span>${n}</span>
-                    <div class="flex gap-2">
-                        <button onclick="moveCat(${i},-1)" class="text-sys-blue">⬆️</button>
-                        <button onclick="moveCat(${i},1)" class="text-sys-blue">⬇️</button>
-                        <button onclick="delCat('${n}')" class="text-sys-danger">✕</button>
-                    </div>
+            document.getElementById('cat-list').innerHTML = state.categories[t].map((n, i) => `
+                <div class="flex justify-between p-3 border-b border-white/10"><span>${n}</span>
+                    <div class="flex gap-2"><button onclick="moveCat(${i},-1)">⬆️</button><button onclick="moveCat(${i},1)">⬇️</button><button onclick="delCat('${n}')" class="text-sys-danger">✕</button></div>
                 </div>
             `).join('');
         }
-        function addCat() {
-            const n = document.getElementById('new-cat').value;
-            if(n) { state.categories[state.ui.catTab].push(n); saveData(); renderCatList(); }
-        }
+        function addCat() { const n=document.getElementById('new-cat').value; if(n){state.categories[state.ui.catTab].push(n); saveData(); renderCatList();} }
         function moveCat(i, d) {
             const arr = state.categories[state.ui.catTab];
-            if((d===-1&&i>0)||(d===1&&i<arr.length-1)) {
-                [arr[i], arr[i+d]] = [arr[i+d], arr[i]];
-                saveData(); renderCatList();
-            }
+            if((d===-1&&i>0)||(d===1&&i<arr.length-1)) { [arr[i], arr[i+d]] = [arr[i+d], arr[i]]; saveData(); renderCatList(); }
         }
-        function delCat(n) {
-            if(confirm('刪除?')) {
-                state.categories[state.ui.catTab] = state.categories[state.ui.catTab].filter(c=>c!==n);
-                saveData(); renderCatList();
-            }
-        }
+        function delCat(n) { if(confirm('刪除?')) { state.categories[state.ui.catTab] = state.categories[state.ui.catTab].filter(c=>c!==n); saveData(); renderCatList(); } }
 
-        function openRulesModal() { toggleModal('modal-rules'); renderRuleList(); }
-        function renderRuleList() {
-            const html = Object.keys(state.keywordMap).length === 0 ? '<p class="text-gray-400 text-sm">無規則</p>' : 
-            Object.entries(state.keywordMap).map(([k, c]) => `
-                <div class="flex justify-between items-center p-3 bg-sys-blue/5 border border-sys-blue/20">
-                    <span class="text-sm">"${k}" &rarr; <strong class="text-sys-purple">${c}</strong></span>
-                    <button onclick="deleteRule('${k}')" class="text-gray-500 hover:text-sys-danger"><i class="fa-solid fa-xmark"></i></button>
-                </div>`).join('');
-            document.getElementById('rule-list-container').innerHTML = html;
-        }
-        function deleteRule(k) { delete state.keywordMap[k]; saveData(); renderRuleList(); }
-
-        // 拆帳
+        // Split
         function openSplitModal() {
             const v = document.getElementById('inp-amount').value;
-            if(!v) return alert('請先輸入總金額');
+            if(!v) return toast('請先輸入總金額', 'error');
             splitState = { total: parseFloat(v), rows: [] };
             document.getElementById('split-total').innerText = formatCurrency(splitState.total);
             renderSplitRows();
@@ -876,10 +817,7 @@
                 c.innerHTML += `
                     <div class="sys-panel p-3 border-l-4 border-sys-purple mb-2">
                         <div class="flex gap-2 mb-2">
-                            <select class="w-1/3 bg-sys-bg border border-sys-blue text-xs p-1" onchange="updSplit(${i},'type',this.value)">
-                                <option value="expense" ${r.type=='expense'?'selected':''}>支出</option>
-                                <option value="income" ${r.type=='income'?'selected':''}>收入</option>
-                            </select>
+                            <select class="w-1/3 bg-sys-bg border border-sys-blue text-xs p-1" onchange="updSplit(${i},'type',this.value)"><option value="expense" ${r.type=='expense'?'selected':''}>支出</option><option value="income" ${r.type=='income'?'selected':''}>收入</option></select>
                             <select class="w-2/3 bg-sys-bg border border-sys-blue text-xs p-1" id="sp-cat-${i}" onchange="updSplit(${i},'cat',this.value)"></select>
                         </div>
                         <div class="flex gap-2">
@@ -889,15 +827,11 @@
                         </div>
                     </div>
                 `;
-                // Defer option population
                 setTimeout(() => {
                     const sel = document.getElementById(`sp-cat-${i}`);
-                    if(sel) {
-                        sel.innerHTML = state.categories[r.type].map(c=>`<option ${c==r.cat?'selected':''}>${c}</option>`).join('');
-                    }
+                    if(sel) sel.innerHTML = state.categories[r.type].map(c=>`<option ${c==r.cat?'selected':''}>${c}</option>`).join('');
                 }, 0);
             });
-            
             const rem = splitState.total - sum;
             document.getElementById('split-ghost').classList.toggle('hidden-force', rem <= 0);
             document.getElementById('split-remain').innerText = formatCurrency(rem);
@@ -919,55 +853,18 @@
         function confirmSplit() {
             const sum = splitState.rows.reduce((s,r)=>s+r.amt,0);
             if(Math.abs(sum - splitState.total) > 1) if(!confirm('金額不符，確定?')) return;
-            
-            const base = {
-                date: document.getElementById('inp-date').value,
-                acc: document.getElementById('sel-from').value
-            };
+            const base = { date: document.getElementById('inp-date').value, acc: document.getElementById('sel-from').value };
             splitState.rows.forEach(r => {
-                state.transactions.unshift({
-                    id: Date.now() + Math.random().toString(),
-                    date: base.date, type: r.type, amount: r.amt, category: r.cat,
-                    accountFrom: base.acc, note: r.note,
-                    isExcluded: false, isRealization: false, isVerified: true
-                });
+                state.transactions.unshift({ id: Date.now()+Math.random(), date: base.date, type: r.type, amount: r.amt, category: r.cat, accountFrom: base.acc, note: r.note, isExcluded: false, isRealization: false, isVerified: true });
             });
-            saveData();
-            closeModal('modal-split');
-            closeModal('modal-tx');
-            toast('拆帳完成');
+            saveData(); closeModal('modal-split'); closeModal('modal-tx'); toast('拆帳完成');
         }
 
-        function processBatch() {
-            const text = document.getElementById('batch-input').value;
-            if (!text) return;
-            const lines = text.split('\n').filter(l => l.trim());
-            let count = 0;
-            lines.forEach(line => {
-                const match = line.match(/(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2})\s+(.+?)\s+(\d+(\.\d+)?)\s*(\S+)?\s*(\((收入|income)\))?/i);
-                if (match) {
-                    let [_, dateStr, note, amount, , account, typeTag] = match;
-                    let date = dateStr.includes('-') ? dateStr : `${new Date().getFullYear()}-${dateStr.replace('/', '-').padStart(5, '0')}`;
-                    if(date.length < 10) date = date.replace(/-(\d)$/,"-0$1").replace(/-(\d)-/,"-0$1-"); 
-                    const type = typeTag ? 'income' : 'expense';
-                    let targetAcc = (account && state.accounts.includes(account)) ? account : state.accounts[0];
-                    let cat = type === 'income' ? state.categories.income[0] : state.categories.expense[0];
-                    for (const [k, c] of Object.entries(state.keywordMap)) { if (note.includes(k)) { cat = c; break; } }
-                    
-                    state.transactions.unshift({
-                        id: Date.now().toString() + Math.random(),
-                        date, type, amount: parseFloat(amount), category: cat, accountFrom: targetAcc, note, isVerified: true, isRealization: false
-                    });
-                    count++;
-                }
-            });
-            document.getElementById('batch-input').value = '';
-            saveData(); toast(`解析完成 ${count} 筆`);
-        }
+        // Backup
         function exportData() {
             const a = document.createElement('a');
             a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
-            a.download = `finsys_backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `backup_${Date.now()}.json`;
             a.click();
         }
         function importData(e) {
@@ -976,34 +873,24 @@
             r.readAsText(e.target.files[0]);
         }
         function resetAll() { if(prompt('輸入RESET')==='RESET') { localStorage.removeItem(APP_ID); location.reload(); } }
-
-        // [V10.5] Data Rescue Feature
         function scanForOldData() {
-            let found = [];
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key.startsWith('finsys_')) found.push(key);
+            let keys = [];
+            for(let i=0; i<localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if(k.startsWith('finsys_')) keys.push(k);
             }
-            if(found.length === 0) return alert('找不到其他備份資料');
-            
-            const choice = prompt(`找到以下資料庫：\n${found.join('\n')}\n請輸入要還原的名稱：`);
-            if(choice && found.includes(choice)) {
-                const data = localStorage.getItem(choice);
-                if(data) {
-                    state = JSON.parse(data);
-                    saveData();
-                    alert('還原成功！');
-                    location.reload();
-                }
+            const c = prompt(`發現備份:\n${keys.join('\n')}\n請輸入名稱還原:`);
+            if(c && keys.includes(c)) {
+                state = JSON.parse(localStorage.getItem(c));
+                saveData();
+                location.reload();
             }
         }
 
-        // Init
+        // Start
         document.documentElement.classList.add('dark');
         loadData();
-        // 如果載入後沒有資料（可能是新使用者或資料遺失），且不是因為 crash，則保持預設
-        state.ui.currentView = 'view-accounts'; 
-        renderApp();
+        renderCurrentView();
     </script>
 </body>
 </html>
