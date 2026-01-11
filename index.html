@@ -18,7 +18,7 @@
                     colors: {
                         sys: {
                             bg: '#0a0a12',
-                            panel: 'rgba(20, 20, 35, 0.95)', // 深藍色半透明背景
+                            panel: 'rgba(20, 20, 35, 0.95)',
                             blue: '#00e1ff',
                             purple: '#9d00ff',
                             text: '#e0e0ff',
@@ -53,39 +53,42 @@
         ::-webkit-scrollbar-track { background: theme('colors.sys.bg'); }
         ::-webkit-scrollbar-thumb { background: theme('colors.sys.blue'); }
 
-        /* 面板樣式還原 */
         .sys-panel {
             background: theme('colors.sys.panel');
             border: 1px solid theme('colors.sys.blue');
             box-shadow: inset 0 0 10px rgba(0, 225, 255, 0.1);
             position: relative;
             overflow: hidden;
-            border-radius: 4px; /* 微圓角 */
+            border-radius: 6px;
         }
         .sys-panel::before {
             content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
             background: linear-gradient(90deg, transparent, theme('colors.sys.blue'), transparent);
         }
 
-        /* 輸入框優化 */
+        /* [V10.5 Fix] 強制設定表單顏色，解決黑底黑字問題 */
         input:not([type="checkbox"]), select, textarea {
             background-color: #1a1a2e !important;
             border: 1px solid theme('colors.sys.blue') !important;
-            color: theme('colors.sys.text') !important;
-            border-radius: 0 !important;
+            color: #ffffff !important; /* 強制白字 */
+            border-radius: 4px !important;
             padding: 0.75rem !important;
-            transition: none !important; 
-            -webkit-appearance: none;
             appearance: none;
-            color-scheme: dark; 
         }
         
+        /* 下拉選單選項顏色修正 */
+        select option {
+            background-color: #1a1a2e !important;
+            color: #ffffff !important;
+        }
+
         input:focus, select:focus, textarea:focus {
             outline: none !important;
             box-shadow: theme('boxShadow.neon-blue') !important;
             background-color: #232342 !important;
         }
 
+        /* Custom Arrow for Select */
         select {
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2300e1ff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
             background-position: right 0.5rem center; 
@@ -94,12 +97,12 @@
             padding-right: 2.5rem !important; 
         }
 
-        /* 按鈕樣式 */
         .sys-btn {
             border: 1px solid theme('colors.sys.blue'); color: theme('colors.sys.blue');
             text-transform: uppercase; letter-spacing: 1px; font-weight: bold;
             padding: 0.75rem 1.5rem; cursor: pointer; background: transparent;
             position: relative; overflow: hidden; transition: all 0.2s;
+            border-radius: 4px;
         }
         .sys-btn:hover { background: theme('colors.sys.blue'); color: theme('colors.sys.bg'); box-shadow: theme('boxShadow.neon-blue'); }
         .sys-btn-danger { border-color: theme('colors.sys.danger'); color: theme('colors.sys.danger'); }
@@ -120,7 +123,7 @@
         .modal-header { flex-shrink: 0; background-color: theme('colors.sys.bg'); z-index: 10; }
         .modal-body { flex-grow: 1; overflow-y: auto; min-height: 0; overscroll-behavior: contain; }
 
-        /* 強制點擊 */
+        /* Force Clickability */
         button, .sys-btn, .nav-item, .record-item-row { cursor: pointer; pointer-events: auto !important; }
         
         #main-content { padding-bottom: 120px; }
@@ -128,21 +131,21 @@
 </head>
 <body class="flex flex-col">
 
-    <header class="sticky top-0 z-20 sys-panel p-4 flex justify-between items-center shadow-lg bg-sys-bg">
+    <header class="sticky top-0 z-20 sys-panel p-4 flex justify-between items-center shadow-lg bg-sys-bg border-none rounded-none border-b border-sys-blue">
         <h1 class="text-2xl font-bold tracking-wider uppercase text-sys-blue drop-shadow-[0_0_5px_rgba(0,225,255,0.8)]">
             <i class="fa-solid fa-microchip mr-2"></i>財務系統
         </h1>
         <button onclick="openTxModal()" class="sys-btn text-sm px-4 py-2 flex items-center">
-            <i class="fa-solid fa-plus mr-2"></i> 紀錄金流
+            <i class="fa-solid fa-plus mr-2"></i> <span class="hidden sm:inline ml-1">紀錄金流</span>
         </button>
     </header>
 
     <main id="main-content" class="flex-1 overflow-y-auto p-4 space-y-6 relative"></main>
 
-    <nav class="fixed bottom-0 left-0 right-0 sys-panel z-20 shadow-[0_-5px_15px_rgba(0,0,0,0.5)] bg-sys-bg">
+    <nav class="fixed bottom-0 left-0 right-0 sys-panel z-20 shadow-[0_-5px_15px_rgba(0,0,0,0.5)] bg-sys-bg rounded-none border-t border-sys-blue">
         <div class="flex justify-around">
             <button onclick="changeView('view-accounts')" class="nav-item w-full p-4 text-sys-text hover:text-sys-blue transition-all flex flex-col items-center" id="nav-accounts">
-                <i class="fa-solid fa-wallet text-xl mb-1"></i><span class="text-xs uppercase">帳戶總覽</span>
+                <i class="fa-solid fa-wallet text-xl mb-1"></i><span class="text-xs uppercase">帳戶</span>
             </button>
             <button onclick="changeView('view-dashboard')" class="nav-item w-full p-4 text-sys-text hover:text-sys-blue transition-all flex flex-col items-center active" id="nav-dashboard">
                 <i class="fa-solid fa-chart-line text-xl mb-1"></i><span class="text-xs uppercase">儀表板</span>
@@ -158,9 +161,9 @@
 
     <div id="modal-tx" class="modal-wrapper fixed inset-0 hidden-force justify-center items-end sm:items-center">
         <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeModal('modal-tx')"></div>
-        <div class="relative w-full sm:w-auto sm:max-w-lg bg-sys-bg rounded-t-2xl sm:rounded-2xl shadow-neon-blue modal-constraint">
+        <div class="relative w-full sm:w-auto sm:max-w-lg bg-sys-bg rounded-t-2xl sm:rounded-2xl shadow-neon-blue modal-constraint border border-sys-blue">
             <div class="p-6 border-b border-sys-blue/30 pb-3 modal-header flex justify-between items-center">
-                <h3 class="text-xl font-bold text-sys-blue uppercase" id="modal-tx-title"><i class="fa-solid fa-pen-to-square mr-2"></i>新增紀錄</h3>
+                <h3 class="text-xl font-bold text-sys-blue uppercase" id="modal-tx-title">新增紀錄</h3>
                 <button onclick="closeModal('modal-tx')" class="text-sys-text hover:text-sys-danger"><i class="fa-solid fa-xmark text-2xl"></i></button>
             </div>
             <div class="p-6 modal-body custom-scrollbar">
@@ -168,11 +171,11 @@
                     <input type="hidden" id="inp-id">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sys-blue text-sm font-bold mb-2 uppercase">日期</label>
+                            <label class="block text-sys-blue text-sm font-bold mb-2">日期</label>
                             <input type="date" id="inp-date" class="w-full">
                         </div>
                         <div>
-                            <label class="block text-sys-blue text-sm font-bold mb-2 uppercase">類型</label>
+                            <label class="block text-sys-blue text-sm font-bold mb-2">類型</label>
                             <select id="inp-type" class="w-full" onchange="refreshCats()">
                                 <option value="expense">支出</option>
                                 <option value="income">收入</option>
@@ -182,29 +185,29 @@
                     </div>
                     
                     <div id="opt-deferred" class="hidden-force">
-                         <label class="flex items-center space-x-3 p-3 sys-panel cursor-pointer border-sys-warn/50">
-                            <input type="checkbox" id="chk-deferred" class="form-checkbox h-5 w-5 text-sys-warn bg-transparent border-sys-warn rounded-none">
-                            <span class="text-sys-text font-bold text-sys-warn">⏳ 預收帳款 (暫不計入收入)</span>
+                         <label class="flex items-center space-x-3 p-3 sys-panel cursor-pointer border border-sys-warn/50">
+                            <input type="checkbox" id="chk-deferred" class="form-checkbox h-5 w-5 bg-transparent border-sys-warn">
+                            <span class="text-sys-warn font-bold">⏳ 預收帳款 (暫不計入收入)</span>
                         </label>
                     </div>
 
                     <div id="opt-realize" class="hidden-force">
-                        <label class="flex items-center space-x-3 p-3 sys-panel cursor-pointer border-sys-success/50">
-                           <input type="checkbox" id="chk-realize" class="form-checkbox h-5 w-5 text-sys-success bg-transparent border-sys-success rounded-none">
-                           <span class="text-sys-text font-bold text-sys-success">🚀 認列為實質收入 (核銷)</span>
+                        <label class="flex items-center space-x-3 p-3 sys-panel cursor-pointer border border-sys-success/50">
+                           <input type="checkbox" id="chk-realize" class="form-checkbox h-5 w-5 bg-transparent border-sys-success">
+                           <span class="text-sys-success font-bold">🚀 認列為實質收入 (核銷)</span>
                        </label>
                     </div>
 
                    <div id="opt-exclude" class="hidden-force">
-                        <label class="flex items-center space-x-3 p-3 sys-panel cursor-pointer border-sys-gray/50">
-                            <input type="checkbox" id="chk-exclude" class="form-checkbox h-5 w-5 text-sys-gray bg-transparent border-sys-gray rounded-none">
-                            <span class="text-sys-text font-bold text-sys-gray">🚫 不列入收支統計</span>
+                        <label class="flex items-center space-x-3 p-3 sys-panel cursor-pointer border border-gray-600">
+                            <input type="checkbox" id="chk-exclude" class="form-checkbox h-5 w-5 bg-transparent border-gray-500">
+                            <span class="text-gray-400 font-bold">🚫 不列入收支統計</span>
                         </label>
-                        <p class="text-xs text-gray-400 mt-1 pl-2">* 勾選後，此筆金額只會調整帳戶餘額，不計入圖表。</p>
+                        <p class="text-xs text-gray-400 mt-1 pl-2">* 勾選後，只調整餘額，不計入圖表。</p>
                    </div>
 
                     <div>
-                        <label class="block text-sys-blue text-sm font-bold mb-2 uppercase">金額</label>
+                        <label class="block text-sys-blue text-sm font-bold mb-2">金額</label>
                         <div class="flex gap-2">
                             <input type="number" id="inp-amount" placeholder="0" class="w-full text-2xl font-bold text-sys-blue">
                             <button onclick="openSplitModal()" class="sys-btn px-4 bg-sys-blue/10 border-sys-purple text-sys-purple hover:bg-sys-purple hover:text-white">
@@ -215,23 +218,23 @@
                     
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sys-blue text-sm font-bold mb-2 uppercase" id="lbl-from">帳戶</label>
+                            <label class="block text-sys-blue text-sm font-bold mb-2" id="lbl-from">帳戶</label>
                             <select id="sel-from" class="w-full"></select>
                         </div>
                          <div id="grp-to" class="hidden-force">
-                            <label class="block text-sys-blue text-sm font-bold mb-2 uppercase">轉入帳戶</label>
+                            <label class="block text-sys-blue text-sm font-bold mb-2">轉入帳戶</label>
                             <select id="sel-to" class="w-full"></select>
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sys-blue text-sm font-bold mb-2 uppercase">分類</label>
+                        <label class="block text-sys-blue text-sm font-bold mb-2">分類</label>
                          <select id="sel-cat" class="w-full"></select>
                     </div>
                     <div>
-                        <label class="block text-sys-blue text-sm font-bold mb-2 uppercase">備註 / 描述</label>
+                        <label class="block text-sys-blue text-sm font-bold mb-2">備註</label>
                         <input type="text" id="inp-note" placeholder="例如：全家午餐" class="w-full">
                     </div>
-                    <button onclick="saveTx()" class="sys-btn w-full py-4 text-lg mb-4"><i class="fa-solid fa-floppy-disk mr-2"></i> 確認登錄</button>
+                    <button onclick="saveTx()" class="sys-btn w-full py-4 text-lg mb-4 bg-sys-blue/10">確認登錄</button>
                     <button onclick="delTx()" id="btn-del" class="hidden-force sys-btn sys-btn-danger w-full mt-2"><i class="fa-solid fa-trash mr-2"></i> 刪除紀錄</button>
                 </div>
             </div>
@@ -240,8 +243,8 @@
 
     <div id="modal-split" class="modal-wrapper fixed inset-0 hidden-force justify-center items-end sm:items-center">
         <div class="absolute inset-0 bg-black/95 backdrop-blur-sm" onclick="closeModal('modal-split')"></div>
-        <div class="relative w-full sm:w-auto sm:max-w-lg bg-sys-bg rounded-t-2xl sm:rounded-2xl modal-constraint">
-            <div class="p-4 border-b border-sys-blue flex justify-between items-center bg-sys-panel modal-header">
+        <div class="relative w-full sm:w-auto sm:max-w-lg bg-sys-bg rounded-t-2xl sm:rounded-2xl modal-constraint border border-sys-purple">
+            <div class="p-4 border-b border-sys-purple flex justify-between items-center bg-sys-panel modal-header">
                 <h3 class="text-xl font-bold text-sys-purple uppercase"><i class="fa-solid fa-scissors mr-2"></i>消費拆帳</h3>
                 <button onclick="closeModal('modal-split')" class="text-sys-text hover:text-sys-danger"><i class="fa-solid fa-xmark text-2xl"></i></button>
             </div>
@@ -258,7 +261,7 @@
                     </div>
                 </div>
             </div>
-            <div class="p-4 border-t border-sys-blue bg-sys-panel modal-header flex gap-3">
+            <div class="p-4 border-t border-sys-purple bg-sys-panel modal-header flex gap-3">
                 <div class="flex-1 text-xs flex flex-col justify-center">
                     <span class="text-gray-400">已分配: <span id="split-sum" class="text-sys-text font-bold">$0</span></span>
                 </div>
@@ -271,20 +274,26 @@
 
     <div id="modal-acc" class="modal-wrapper fixed inset-0 hidden-force flex items-center justify-center">
         <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closeModal('modal-acc')"></div>
-        <div class="sys-panel w-full max-w-md m-4 p-6 relative bg-sys-bg">
+        <div class="sys-panel w-full max-w-md m-4 p-6 relative bg-sys-bg border border-sys-blue">
             <h3 class="text-xl font-bold text-sys-blue uppercase mb-4">帳戶管理</h3>
             <input type="hidden" id="acc-old">
             <div class="space-y-4">
-                <input type="text" id="acc-name" class="w-full" placeholder="帳戶名稱">
-                <input type="number" id="acc-bal" class="w-full" placeholder="當前餘額">
-                <button onclick="saveAcc()" class="sys-btn w-full">儲存</button>
+                <div>
+                    <label class="block text-sys-blue text-sm mb-1">帳戶名稱</label>
+                    <input type="text" id="acc-name" class="w-full" placeholder="例如：永豐">
+                </div>
+                <div>
+                    <label class="block text-sys-blue text-sm mb-1">當前餘額 (修正用)</label>
+                    <input type="number" id="acc-bal" class="w-full" placeholder="0">
+                </div>
+                <button onclick="saveAcc()" class="sys-btn w-full">儲存變更</button>
             </div>
         </div>
     </div>
 
     <div id="modal-cats" class="modal-wrapper fixed inset-0 hidden-force flex items-center justify-center">
         <div class="absolute inset-0 bg-black/90 backdrop-blur-sm" onclick="closeModal('modal-cats')"></div>
-        <div class="sys-panel w-full max-w-md m-4 p-6 relative bg-sys-bg h-3/4 flex flex-col">
+        <div class="sys-panel w-full max-w-md m-4 p-6 relative bg-sys-bg h-3/4 flex flex-col border border-sys-blue">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-bold text-sys-blue uppercase">分類管理</h3>
                 <button onclick="closeModal('modal-cats')" class="text-sys-text"><i class="fa-solid fa-xmark text-xl"></i></button>
@@ -294,7 +303,7 @@
                 <button onclick="setCatTab('income')" id="tab-c-inc" class="flex-1 py-2 text-gray-500">收入</button>
             </div>
             <div class="flex gap-2 mb-4 shrink-0">
-                <input type="text" id="new-cat" class="flex-1" placeholder="新增分類...">
+                <input type="text" id="new-cat" class="flex-1" placeholder="新分類...">
                 <button onclick="addCat()" class="sys-btn py-1 px-4"><i class="fa-solid fa-plus"></i></button>
             </div>
             <div id="cat-list" class="overflow-y-auto flex-1 space-y-1 pr-2 custom-scrollbar"></div>
@@ -304,7 +313,8 @@
     <div id="toast-box" class="fixed top-20 right-4 z-[200] flex flex-col space-y-2 pointer-events-none"></div>
 
     <script>
-        const APP_ID = 'finsys_solo_v9_2';
+        // ================= GLOBAL CONFIG =================
+        const APP_ID = 'finsys_solo_v9_2'; // 保持 ID 以讀取舊資料
         const DEFAULTS = {
             accounts: ['永豐 (活存)', '現金', '信用卡'],
             categories: {
@@ -326,12 +336,13 @@
         let splitState = { total: 0, rows: [] };
         let mainChart = null, donutChart = null;
 
-        // --- GLOBAL FUNCS ---
-        function toast(msg) {
+        // ================= CORE FUNCTIONS =================
+        function toast(msg, type='success') {
             const box = document.getElementById('toast-box');
             const div = document.createElement('div');
-            div.className = "bg-sys-bg border border-sys-blue text-sys-blue p-3 shadow-lg animate-[slideInRight_0.3s_ease-out]";
-            div.innerHTML = `<i class="fa-solid fa-check-circle mr-2"></i>${msg}`;
+            const color = type === 'error' ? 'text-sys-danger border-sys-danger' : 'text-sys-blue border-sys-blue';
+            div.className = `bg-sys-bg border ${color} p-3 shadow-lg animate-[slideInRight_0.3s_ease-out]`;
+            div.innerHTML = `<i class="fa-solid ${type==='error'?'fa-circle-exclamation':'fa-check-circle'} mr-2"></i>${msg}`;
             box.appendChild(div);
             setTimeout(() => div.remove(), 3000);
         }
@@ -347,7 +358,10 @@
                     const saved = JSON.parse(json);
                     state = { ...state, ...saved };
                     if (!state.categories.transfer) state.categories.transfer = DEFAULTS.categories.transfer;
-                } catch (e) { console.error(e); }
+                } catch (e) { 
+                    console.error(e);
+                    toast("資料讀取錯誤", 'error');
+                }
             }
         }
         function saveData() { localStorage.setItem(APP_ID, JSON.stringify(state)); renderCurrentView(); }
@@ -373,7 +387,7 @@
         function renderAccounts(c) {
             const total = state.accounts.reduce((s, a) => s + getBal(a), 0);
             let h = `
-                <div class="sys-panel p-6 mb-6 text-center">
+                <div class="sys-panel p-6 mb-6 text-center border border-sys-blue shadow-neon-blue">
                     <h2 class="text-sm text-sys-blue font-bold tracking-widest uppercase mb-1">系統總資產</h2>
                     <p class="text-4xl font-bold text-white">${formatCurrency(total)}</p>
                 </div>
@@ -382,9 +396,9 @@
             state.accounts.forEach(a => {
                 const bal = getBal(a);
                 h += `
-                    <div class="sys-panel p-5 flex justify-between items-center cursor-pointer hover:border-sys-blue" onclick="alert('目前餘額: ${formatCurrency(bal)}')">
+                    <div class="sys-panel p-5 flex justify-between items-center cursor-pointer hover:border-sys-blue hover:shadow-neon-blue transition-all" onclick="openAccModal('${a}')">
                         <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 border border-sys-blue flex items-center justify-center text-sys-blue"><i class="fa-solid fa-wallet"></i></div>
+                            <div class="w-10 h-10 border border-sys-blue flex items-center justify-center text-sys-blue rounded"><i class="fa-solid fa-wallet"></i></div>
                             <span class="font-bold text-lg">${a}</span>
                         </div>
                         <span class="font-bold text-xl ${bal < 0 ? 'text-sys-danger' : 'text-sys-blue'}">${formatCurrency(bal)}</span>
@@ -415,8 +429,8 @@
                 </div>
                 <div class="sys-panel p-4 mb-6">
                     <div class="flex justify-between mb-4"><h3 class="font-bold text-sys-blue uppercase">收支趨勢</h3><div class="flex gap-2">
-                        <select onchange="setFilter('year',this.value)" class="bg-sys-bg border border-sys-blue text-xs p-1">${getYearOpts()}</select>
-                        <select onchange="setFilter('month',this.value)" class="bg-sys-bg border border-sys-blue text-xs p-1">${getMonthOpts()}</select>
+                        <select onchange="setFilter('year',this.value)" class="bg-sys-bg border border-sys-blue text-xs p-1 rounded text-white">${getYearOpts()}</select>
+                        <select onchange="setFilter('month',this.value)" class="bg-sys-bg border border-sys-blue text-xs p-1 rounded text-white">${getMonthOpts()}</select>
                     </div></div>
                     <div class="h-48"><canvas id="chart-main"></canvas></div>
                 </div>
@@ -425,7 +439,7 @@
                     <div class="flex mb-4 border-b border-sys-blue/30"><button onclick="setTab('expense')" class="flex-1 py-2 ${state.ui.tab==='expense'?'text-sys-blue border-b-2 border-sys-blue':''}">支出</button><button onclick="setTab('income')" class="flex-1 py-2 ${state.ui.tab==='income'?'text-sys-blue border-b-2 border-sys-blue':''}">收入</button><button onclick="setTab('excluded')" class="flex-1 py-2 ${state.ui.tab==='excluded'?'text-sys-warn border-b-2 border-sys-warn':''}">追蹤項</button></div>
                     <div class="flex flex-col md:flex-row gap-6">
                         <div class="h-48 w-full md:w-1/2 flex justify-center"><canvas id="chart-donut"></canvas></div>
-                        <div id="breakdown-list" class="w-full md:w-1/2 space-y-2 max-h-60 overflow-y-auto"></div>
+                        <div id="breakdown-list" class="w-full md:w-1/2 space-y-2 max-h-60 overflow-y-auto custom-scrollbar"></div>
                     </div>
                 </div>
                 <div class="sys-panel p-4">
@@ -438,6 +452,7 @@
 
         function renderRecords(c) {
             let h = `<h2 class="text-xl font-bold text-sys-blue mb-4 uppercase">近期紀錄</h2><div class="space-y-3">`;
+            if (state.transactions.length === 0) h += `<div class="text-center text-gray-500 py-8">尚無資料</div>`;
             state.transactions.slice(0, 50).forEach(t => h += renderTxItem(t));
             h += `</div>`;
             c.innerHTML = h;
@@ -447,9 +462,9 @@
             const color = t.type==='expense'?'text-sys-danger':(t.type==='transfer'?'text-sys-blue':'text-sys-success');
             const icon = t.type==='expense'?'fa-arrow-trend-down':(t.type==='transfer'?'fa-right-left':'fa-arrow-trend-up');
             return `
-                <div class="sys-panel p-4 flex justify-between items-center record-item-row hover:bg-sys-blue/5" onclick="openTxModal('${t.id}')">
+                <div class="sys-panel p-4 flex justify-between items-center record-item-row hover:bg-sys-blue/5 border border-transparent hover:border-sys-blue transition-all" onclick="openTxModal('${t.id}')">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 flex items-center justify-center border border-white/10 bg-white/5 ${color}"><i class="fa-solid ${icon}"></i></div>
+                        <div class="w-10 h-10 flex items-center justify-center border border-white/10 bg-white/5 ${color} rounded"><i class="fa-solid ${icon}"></i></div>
                         <div>
                             <div class="font-bold text-sm ${color}">${t.category} ${t.isExcluded?'(不計)':''}</div>
                             <div class="text-xs text-gray-400">${t.date} | ${t.note||'-'}</div>
@@ -465,28 +480,54 @@
 
         function renderSettings(c) {
             const accList = state.accounts.map((a, i) => `
-                <div class="flex justify-between p-3 bg-sys-blue/5 border border-sys-blue/20">
-                    <span>${a}</span>
+                <div class="flex justify-between p-3 bg-sys-blue/5 border border-sys-blue/20 rounded mb-1">
+                    <span class="font-bold text-sm">${a}</span>
                     <div class="flex gap-2">
-                        <button onclick="moveAcc(${i},-1)" class="text-sys-blue"><i class="fa-solid fa-arrow-up"></i></button>
-                        <button onclick="moveAcc(${i},1)" class="text-sys-blue"><i class="fa-solid fa-arrow-down"></i></button>
-                        <button onclick="delAcc('${a}')" class="text-sys-danger"><i class="fa-solid fa-xmark"></i></button>
+                        <button onclick="moveAcc(${i},-1)" class="text-sys-blue px-2"><i class="fa-solid fa-arrow-up"></i></button>
+                        <button onclick="moveAcc(${i},1)" class="text-sys-blue px-2"><i class="fa-solid fa-arrow-down"></i></button>
+                        <button onclick="delAcc('${a}')" class="text-sys-danger px-2"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                 </div>
             `).join('');
 
             c.innerHTML = `
                 <h2 class="text-xl font-bold text-sys-blue mb-6 uppercase">設定</h2>
+                
                 <div class="sys-panel p-6 mb-6">
-                    <h3 class="text-lg font-bold text-sys-blue mb-4">帳戶管理</h3>
-                    <div class="flex gap-2 mb-4"><input type="text" id="new-acc-name" placeholder="名稱..." class="flex-1"><button onclick="addAccSet()" class="sys-btn px-4">+</button></div>
-                    <div class="max-h-60 overflow-y-auto space-y-1 pr-2 custom-scrollbar">${accList}</div>
+                    <h3 class="text-lg font-bold text-sys-blue mb-4 border-b border-sys-blue/30 pb-2">帳戶排序管理</h3>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="new-acc-name" placeholder="新增帳戶名稱..." class="flex-1 bg-sys-bg border border-sys-blue rounded p-2 text-white">
+                        <button onclick="addAccSet()" class="sys-btn px-4">+</button>
+                    </div>
+                    <div class="max-h-60 overflow-y-auto custom-scrollbar">${accList}</div>
                 </div>
-                <div class="space-y-4">
-                    <button onclick="openCatsModal()" class="sys-panel p-4 w-full text-left font-bold hover:border-sys-blue">分類架構管理</button>
-                    <button onclick="exportData()" class="sys-btn w-full">匯出備份</button>
-                    <div class="relative"><button class="sys-btn w-full">匯入備份</button><input type="file" class="absolute inset-0 opacity-0" onchange="importData(event)"></div>
-                    <button onclick="resetAll()" class="sys-btn sys-btn-danger w-full">重置系統</button>
+
+                <div class="grid grid-cols-1 gap-4">
+                    <button onclick="openCatsModal()" class="sys-panel p-4 w-full text-left font-bold hover:border-sys-blue flex justify-between items-center group">
+                        <span><i class="fa-solid fa-tags mr-2"></i> 分類架構管理</span>
+                        <i class="fa-solid fa-chevron-right text-gray-500 group-hover:text-sys-blue"></i>
+                    </button>
+                    <button onclick="openRulesModal()" class="sys-panel p-4 w-full text-left font-bold hover:border-sys-blue flex justify-between items-center group">
+                        <span><i class="fa-solid fa-robot mr-2"></i> 自動分類記憶庫</span>
+                        <i class="fa-solid fa-chevron-right text-gray-500 group-hover:text-sys-blue"></i>
+                    </button>
+                    
+                    <div class="sys-panel p-6 border-t-4 border-sys-purple mt-2">
+                        <h3 class="text-lg font-bold text-sys-purple uppercase mb-4">智能批次解析</h3>
+                        <textarea id="batch-input" rows="4" placeholder="貼上文字，如：&#10;12/25 Costco餐飲 500 信用卡&#10;12/25 Costco代墊 1800 信用卡" class="w-full mb-4 font-mono text-sm bg-sys-bg border border-sys-purple rounded p-2 text-white"></textarea>
+                        <button onclick="processBatch()" class="sys-btn w-full !border-sys-purple !text-sys-purple hover:!bg-sys-purple hover:!text-white">執行解析程序</button>
+                    </div>
+
+                    <div class="sys-panel p-6 border border-sys-danger/30 mt-4">
+                        <h3 class="text-lg font-bold text-sys-danger uppercase mb-4">資料庫管理</h3>
+                        <div class="space-y-3">
+                            <button onclick="exportData()" class="sys-btn w-full">匯出備份檔案</button>
+                            <div class="relative"><button class="sys-btn w-full">匯入備份還原</button><input type="file" class="absolute inset-0 opacity-0 cursor-pointer" onchange="importData(event)"></div>
+                            <button onclick="resetAll()" class="sys-btn sys-btn-danger w-full mt-2">格式化重置系統</button>
+                            
+                            <button onclick="scanForOldData()" class="w-full text-center text-xs text-gray-500 hover:text-sys-blue mt-4 underline">🛠️ 掃描與還原舊資料</button>
+                        </div>
+                    </div>
                 </div>
             `;
         }
@@ -508,7 +549,8 @@
         function shouldExclude(t) {
             if (t.isExcluded) return true;
             const c = (t.category || '').trim();
-            return c === '系統調整' || c === '帳戶餘額調整';
+            // [V10.5 Fix] Expanded exclude list
+            return ['系統調整', '帳戶餘額調整', '帳戶餘額修正', '初期餘額'].includes(c);
         }
 
         function getYearOpts() {
@@ -525,11 +567,11 @@
 
         // Charts
         function drawCharts(y, m) {
-            const ctx = document.getElementById('chart-main');
-            if(!ctx) return;
+            const cvs = document.getElementById('chart-main');
+            if(!cvs) return;
+            const ctx = cvs.getContext('2d');
             if(mainChart) mainChart.destroy();
             
-            // Data Prep
             const labels = m === 'all' ? Array.from({length:12},(_,i)=>`${i+1}月`) : ['本月'];
             const incData = new Array(labels.length).fill(0);
             const expData = new Array(labels.length).fill(0);
@@ -678,7 +720,7 @@
 
             if(t === 'transfer') {
                 tx.accountTo = document.getElementById('sel-to').value;
-                if(tx.accountFrom === tx.accountTo) return alert('帳戶相同');
+                if(tx.accountFrom === tx.accountTo) return alert('帳戶不能相同');
                 tx.isRealization = document.getElementById('chk-realize').checked;
             } else {
                 tx.isExcluded = document.getElementById('chk-exclude').checked;
@@ -691,7 +733,7 @@
 
             saveData();
             closeModal('modal-tx');
-            toast('已儲存');
+            toast('儲存成功');
         }
 
         function delTx() {
@@ -702,7 +744,121 @@
             }
         }
 
-        // --- SPLIT ---
+        // 帳戶操作
+        function openAccModal(name) {
+            document.getElementById('acc-name').value = name || '';
+            document.getElementById('acc-bal').value = name ? getBal(name) : '';
+            document.getElementById('acc-old').value = name || '';
+            openModal('modal-acc');
+        }
+        function saveAcc() {
+            const name = document.getElementById('acc-name').value;
+            const oldName = document.getElementById('acc-old').value;
+            const bal = parseFloat(document.getElementById('acc-bal').value);
+            
+            if (!name) return;
+            
+            if (oldName && oldName !== name) {
+                // Rename logic
+                state.accounts = state.accounts.map(a => a === oldName ? name : a);
+                state.transactions.forEach(t => {
+                    if(t.accountFrom === oldName) t.accountFrom = name;
+                    if(t.accountTo === oldName) t.accountTo = name;
+                });
+            } else if (!state.accounts.includes(name)) {
+                state.accounts.push(name);
+            }
+            
+            // Adjust Balance Logic
+            if (!isNaN(bal)) {
+                const current = getBal(name);
+                const diff = bal - current;
+                if (Math.abs(diff) > 0.01) {
+                    state.transactions.unshift({
+                        id: Date.now().toString(),
+                        date: new Date().toISOString().split('T')[0],
+                        type: diff > 0 ? 'income' : 'expense',
+                        amount: Math.abs(diff),
+                        category: '帳戶餘額調整',
+                        accountFrom: name,
+                        note: '餘額修正',
+                        isExcluded: false, isRealization: false, isVerified: true
+                    });
+                }
+            }
+            saveData();
+            closeModal('modal-acc');
+        }
+        function moveAcc(idx, dir) {
+            if (dir === -1 && idx > 0) [state.accounts[idx], state.accounts[idx-1]] = [state.accounts[idx-1], state.accounts[idx]];
+            if (dir === 1 && idx < state.accounts.length-1) [state.accounts[idx], state.accounts[idx+1]] = [state.accounts[idx+1], state.accounts[idx]];
+            saveData();
+        }
+        function delAcc(name) {
+            if (confirm('刪除?')) {
+                state.accounts = state.accounts.filter(a => a !== name);
+                saveData();
+            }
+        }
+        function addAccSet() { 
+            const n = document.getElementById('new-acc-name').value;
+            if(n && !state.accounts.includes(n)) { state.accounts.push(n); saveData(); }
+        }
+
+        // 分類管理
+        function openCatsModal() { 
+            state.ui.catTab = 'expense';
+            renderCatList();
+            openModal('modal-cats'); 
+        }
+        function setCatTab(t) { state.ui.catTab = t; renderCatList(); }
+        function renderCatList() {
+            const t = state.ui.catTab;
+            const c = document.getElementById('cat-list');
+            document.getElementById('tab-c-exp').className = `flex-1 py-2 ${t==='expense'?'text-sys-blue border-b-2 border-sys-blue':''}`;
+            document.getElementById('tab-c-inc').className = `flex-1 py-2 ${t==='income'?'text-sys-blue border-b-2 border-sys-blue':''}`;
+            c.innerHTML = state.categories[t].map((n, i) => `
+                <div class="flex justify-between p-3 border-b border-white/10">
+                    <span>${n}</span>
+                    <div class="flex gap-2">
+                        <button onclick="moveCat(${i},-1)" class="text-sys-blue">⬆️</button>
+                        <button onclick="moveCat(${i},1)" class="text-sys-blue">⬇️</button>
+                        <button onclick="delCat('${n}')" class="text-sys-danger">✕</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        function addCat() {
+            const n = document.getElementById('new-cat').value;
+            if(n) { state.categories[state.ui.catTab].push(n); saveData(); renderCatList(); }
+        }
+        function moveCat(i, d) {
+            const arr = state.categories[state.ui.catTab];
+            if((d===-1&&i>0)||(d===1&&i<arr.length-1)) {
+                [arr[i], arr[i+d]] = [arr[i+d], arr[i]];
+                saveData(); renderCatList();
+            }
+        }
+        function delCat(n) {
+            if(confirm('刪除?')) {
+                state.categories[state.ui.catTab] = state.categories[state.ui.catTab].filter(c=>c!==n);
+                saveData(); renderCatList();
+            }
+        }
+
+        function openRulesModal() { toggleModal('modal-rules'); renderRuleList(); }
+        function renderRuleList() {
+            const html = Object.keys(state.keywordMap).length === 0 ? '<p class="text-gray-400 text-sm">無規則</p>' : 
+            Object.entries(state.keywordMap).map(([k, c]) => `
+                <div class="flex justify-between items-center p-3 bg-sys-blue/5 border border-sys-blue/20">
+                    <span class="text-sm">"${k}" &rarr; <strong class="text-sys-purple">${c}</strong></span>
+                    <button onclick="deleteRule('${k}')" class="text-gray-500 hover:text-sys-danger"><i class="fa-solid fa-xmark"></i></button>
+                </div>`).join('');
+            document.getElementById('rule-list-container').innerHTML = html;
+        }
+        function deleteRule(k) { delete state.keywordMap[k]; saveData(); renderRuleList(); }
+
+        // 拆帳
         function openSplitModal() {
             const v = document.getElementById('inp-amount').value;
             if(!v) return alert('請先輸入總金額');
@@ -782,89 +938,36 @@
             toast('拆帳完成');
         }
 
-        // --- ACCOUNT & CATS ---
-        function openAccModal() {
-            document.getElementById('acc-name').value = '';
-            document.getElementById('acc-bal').value = '';
-            openModal('modal-acc');
+        function processBatch() {
+            const text = document.getElementById('batch-input').value;
+            if (!text) return;
+            const lines = text.split('\n').filter(l => l.trim());
+            let count = 0;
+            lines.forEach(line => {
+                const match = line.match(/(\d{4}-\d{2}-\d{2}|\d{1,2}\/\d{1,2})\s+(.+?)\s+(\d+(\.\d+)?)\s*(\S+)?\s*(\((收入|income)\))?/i);
+                if (match) {
+                    let [_, dateStr, note, amount, , account, typeTag] = match;
+                    let date = dateStr.includes('-') ? dateStr : `${new Date().getFullYear()}-${dateStr.replace('/', '-').padStart(5, '0')}`;
+                    if(date.length < 10) date = date.replace(/-(\d)$/,"-0$1").replace(/-(\d)-/,"-0$1-"); 
+                    const type = typeTag ? 'income' : 'expense';
+                    let targetAcc = (account && state.accounts.includes(account)) ? account : state.accounts[0];
+                    let cat = type === 'income' ? state.categories.income[0] : state.categories.expense[0];
+                    for (const [k, c] of Object.entries(state.keywordMap)) { if (note.includes(k)) { cat = c; break; } }
+                    
+                    state.transactions.unshift({
+                        id: Date.now().toString() + Math.random(),
+                        date, type, amount: parseFloat(amount), category: cat, accountFrom: targetAcc, note, isVerified: true, isRealization: false
+                    });
+                    count++;
+                }
+            });
+            document.getElementById('batch-input').value = '';
+            saveData(); toast(`解析完成 ${count} 筆`);
         }
-        function saveAcc() {
-            const n = document.getElementById('acc-name').value;
-            const b = parseFloat(document.getElementById('acc-bal').value);
-            if(!n) return;
-            if(!state.accounts.includes(n)) state.accounts.push(n);
-            if(!isNaN(b)) {
-                const diff = b - getBal(n);
-                if(diff!==0) state.transactions.unshift({
-                    id: Date.now().toString(), date: new Date().toISOString().split('T')[0],
-                    type: diff>0?'income':'expense', amount: Math.abs(diff),
-                    category: '帳戶餘額調整', accountFrom: n, note: '初始餘額',
-                    isExcluded: false, isRealization: false, isVerified: true
-                });
-            }
-            saveData();
-            closeModal('modal-acc');
-        }
-        function moveAcc(i, d) {
-            if((d===-1&&i>0)||(d===1&&i<state.accounts.length-1)) {
-                [state.accounts[i], state.accounts[i+d]] = [state.accounts[i+d], state.accounts[i]];
-                saveData();
-            }
-        }
-        function delAcc(n) { if(confirm('刪除?')) { state.accounts = state.accounts.filter(a=>a!==n); saveData(); } }
-        function addAccSet() { 
-            const n = document.getElementById('new-acc-name').value;
-            if(n && !state.accounts.includes(n)) { state.accounts.push(n); saveData(); }
-        }
-
-        // Cat Logic Simplified
-        function openCatsModal() { 
-            state.ui.catTab = 'expense';
-            renderCatList();
-            openModal('modal-cats'); 
-        }
-        function setCatTab(t) { state.ui.catTab = t; renderCatList(); }
-        function renderCatList() {
-            const t = state.ui.catTab;
-            const c = document.getElementById('cat-list');
-            
-            document.getElementById('tab-c-exp').className = `flex-1 py-2 ${t==='expense'?'text-sys-blue border-b-2 border-sys-blue':''}`;
-            document.getElementById('tab-c-inc').className = `flex-1 py-2 ${t==='income'?'text-sys-blue border-b-2 border-sys-blue':''}`;
-
-            c.innerHTML = state.categories[t].map((n, i) => `
-                <div class="flex justify-between p-3 border-b border-white/10">
-                    <span>${n}</span>
-                    <div class="flex gap-2">
-                        <button onclick="moveCat(${i},-1)">⬆️</button>
-                        <button onclick="moveCat(${i},1)">⬇️</button>
-                        <button onclick="delCat('${n}')" class="text-sys-danger">✕</button>
-                    </div>
-                </div>
-            `).join('');
-        }
-        function addCat() {
-            const n = document.getElementById('new-cat').value;
-            if(n) { state.categories[state.ui.catTab].push(n); saveData(); renderCatList(); }
-        }
-        function moveCat(i, d) {
-            const arr = state.categories[state.ui.catTab];
-            if((d===-1&&i>0)||(d===1&&i<arr.length-1)) {
-                [arr[i], arr[i+d]] = [arr[i+d], arr[i]];
-                saveData(); renderCatList();
-            }
-        }
-        function delCat(n) {
-            if(confirm('刪除?')) {
-                state.categories[state.ui.catTab] = state.categories[state.ui.catTab].filter(c=>c!==n);
-                saveData(); renderCatList();
-            }
-        }
-
-        // --- BACKUP ---
         function exportData() {
             const a = document.createElement('a');
             a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
-            a.download = `backup_${Date.now()}.json`;
+            a.download = `finsys_backup_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
         }
         function importData(e) {
@@ -874,8 +977,33 @@
         }
         function resetAll() { if(prompt('輸入RESET')==='RESET') { localStorage.removeItem(APP_ID); location.reload(); } }
 
-        // Start
-        window.onload();
+        // [V10.5] Data Rescue Feature
+        function scanForOldData() {
+            let found = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith('finsys_')) found.push(key);
+            }
+            if(found.length === 0) return alert('找不到其他備份資料');
+            
+            const choice = prompt(`找到以下資料庫：\n${found.join('\n')}\n請輸入要還原的名稱：`);
+            if(choice && found.includes(choice)) {
+                const data = localStorage.getItem(choice);
+                if(data) {
+                    state = JSON.parse(data);
+                    saveData();
+                    alert('還原成功！');
+                    location.reload();
+                }
+            }
+        }
+
+        // Init
+        document.documentElement.classList.add('dark');
+        loadData();
+        // 如果載入後沒有資料（可能是新使用者或資料遺失），且不是因為 crash，則保持預設
+        state.ui.currentView = 'view-accounts'; 
+        renderApp();
     </script>
 </body>
 </html>
